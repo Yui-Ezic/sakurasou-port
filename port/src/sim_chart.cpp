@@ -1,4 +1,5 @@
 // Job 0xa: spec square / task chart (spec_sim section 10).
+#include "tr.h"
 #include "sim_scenes.h"
 #include "sim_ui.h"
 
@@ -151,7 +152,7 @@ struct Chart : Job {
             if (r.state >= 5) simText("完成", 170, -74, 14, {220, 30, 30, 255});
             else {
                 int rest = r.state >= 3 ? d.workCost - r.workDone : d.planCost - r.planDone, tot = r.state >= 3 ? d.workCost : d.planCost;
-                snprintf(b, sizeof b, "あと %s.%s/%s.%s日", kDigitStr[rest / 3], kDigitStr[(rest % 3) * 3], kDigitStr[tot / 3], kDigitStr[(tot % 3) * 3]);
+                snprintf(b, sizeof b, tr("あと %s.%s/%s.%s日").c_str(), kDigitStr[rest / 3], kDigitStr[(rest % 3) * 3], kDigitStr[tot / 3], kDigitStr[(tot % 3) * 3]);
                 simText(b, 100, -74, 10, {0, 0, 0, 255});
             }
         }

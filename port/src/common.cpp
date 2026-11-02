@@ -194,7 +194,14 @@ void HelpBar::draw() {
     ui(*tex, {1, 0, 7, 24}, 0, y, 1, 100, 1);
     // first 32 full-width columns go to item 0, the rest to item 1 (FUN_00010600); short text is centred in both
     int cols = 0, half = 0; size_t cut = text.size(); const char* p = text.c_str();
-    while (*p) { const char* q = p; uint32_t c = utf8Next(p); int nc = cols; if (c < 0x80) { if (++half == 2) { half = 0; nc++; } } else nc++; if (nc > 32) { cut = q - text.c_str(); break; } cols = nc; }
+    if (isCyrillic(text)) {      // proportional text: first item takes whole words up to ~450 px, the second takes the rest
+        float w = 0; size_t lastSp = std::string::npos; cut = text.size();
+        if (layoutWidth(text, 15) > 450) for (size_t i = 0; i < text.size();) {
+            const char* q = text.c_str() + i; const char* s0 = q; uint32_t c = utf8Next(q);
+            if (w + g_fontM.propAdv(c) > 450) { if (lastSp != std::string::npos) cut = lastSp; break; }
+            w += g_fontM.propAdv(c); if (c == ' ') lastSp = i + 1; i += q - s0;
+        }
+    } else while (*p) { const char* q = p; uint32_t c = utf8Next(p); int nc = cols; if (c < 0x80) { if (++half == 2) { half = 0; nc++; } } else nc++; if (nc > 32) { cut = q - text.c_str(); break; } cols = nc; }
     std::string a = text.substr(0, cut), b = text.substr(cut);
     bool shortText = b.empty();
     for (int i = 0; i < 2; i++) {

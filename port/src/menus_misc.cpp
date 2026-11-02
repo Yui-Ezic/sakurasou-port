@@ -1,5 +1,6 @@
 // Tips 0x13, backlog 0x1d, DLC menu 0x1e, character information 0x1f, DLC movie 0x27.
 #include "menus.h"
+#include "tr.h"
 #include "menus_data.h"
 #include "menus_ui.h"
 #include "movie.h"
@@ -100,7 +101,13 @@ struct TipsScene : Job {
         }
         const auto& d = tipData(); int k = sel();
                 static const char* fd[10] = {"０", "１", "２", "３", "４", "５", "６", "７", "８", "９"};
-        std::string hd = std::string("ＴＩＰＳ ＮＯ．") + fd[(k + 1) / 10] + fd[(k + 1) % 10];
+        std::string hd;
+        {   // the whole format is translatable; Russian gets ASCII digits because full-width ones do not suit proportional text
+            const std::string& f = tr("ＴＩＰＳ ＮＯ．%s%s"); char b[128];
+            if (isCyrillic(f)) { char n[3] = {char('0' + (k + 1) / 10), char('0' + (k + 1) % 10), 0}; snprintf(b, sizeof b, f.c_str(), n, ""); }
+            else snprintf(b, sizeof b, f.c_str(), fd[(k + 1) / 10], fd[(k + 1) % 10]);
+            hd = b;
+        }
         mu::textCentered(g_fontM, hd, -105, -68 + 25, {0, 0, 0, 255}, 14.5f, 18);
         if (k < (int)d.size() && g_sys.bit(0x3144, k)) {
             mu::textCentered(g_fontM, d[k].title, 62, -68 + 25, {0, 0, 0, 255}, 14.5f, 18);

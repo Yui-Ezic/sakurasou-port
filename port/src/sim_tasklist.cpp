@@ -1,5 +1,6 @@
 // Job 0xd: task list. spec_sim section 11 leaves the layout unresolved: read-only queue view.
 // ASSUMED: layout approximated from task_*.txg contents, one page per character, LEFT/RIGHT to switch.
+#include "tr.h"
 #include "sim_scenes.h"
 #include "sim_ui.h"
 
@@ -44,7 +45,7 @@ struct TaskList : Job {
             g_gfx.fillRect(240 - 220, 136 - y - 12, 440, 24, {255, 255, 255, 200});
             simText(stripNewlines(d.name), -212, y + 7, 14, {0, 0, 0, 255});
             int rest = d.workCost - r.workDone; char b[32];
-            snprintf(b, sizeof b, "残 %s.%s日", kDigitStr[rest / 3], kDigitStr[(rest % 3) * 3]);
+            snprintf(b, sizeof b, tr("残 %s.%s日").c_str(), kDigitStr[rest / 3], kDigitStr[(rest % 3) * 3]);
             simText(b, 150, y + 5, 10, {0, 0, 0, 255});
         }
         if (n == 0) simText("タスクなし", -212, 20, 14, {80, 80, 80, 255});

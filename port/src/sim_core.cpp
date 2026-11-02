@@ -2,6 +2,7 @@
 #include "sim_api.h"
 extern int g_eventViewId;
 #include "sim_sprites.h"
+#include "tr.h"
 #include <SDL.h>
 #include <algorithm>
 #include <cmath>
@@ -59,8 +60,11 @@ int simRand() {
     return (int)((s_seed >> 16) & 0x7fff);
 }
 
+// Table text may hold line breaks for the Japanese layout. The translation is looked up with them, then joined:
+// Japanese drops the break, Russian turns it into a space.
 std::string stripNewlines(const char* s) {
-    std::string o; for (; *s; s++) if (*s != '\n' && *s != '\r') o += *s;
+    const std::string& t = tr(s); bool ru = isCyrillic(t);
+    std::string o; for (const char* p = t.c_str(); *p; p++) { if (*p == '\r') continue; if (*p == '\n') { if (ru) o += ' '; continue; } o += *p; }
     return o;
 }
 

@@ -88,6 +88,15 @@ def wrap(font, s, width=MSG_W):
     return ''.join(out)
 
 
+_FONTS = {}
+
+
+def font_named(name):
+    if name not in _FONTS:
+        _FONTS[name] = Font(name)
+    return _FONTS[name]
+
+
 def normalise(ru):
     """Fix what the font cannot show or the engine would misread."""
     ru = ru.replace('\\n', '\n').replace('—', '―').replace('–', '―').replace('...', '…').replace(' ', ' ')
@@ -116,8 +125,20 @@ def check(font, e, ru, glossary=()):
     jp = e['jp']
     if re.findall(r'†(\d+)‡', jp) != re.findall(r'†(\d+)‡', n) or jp.count('‡') != n.count('‡'):
         err.append('сломана ссылка TIPS (†номер‡текст‡)')
+    spec = lambda t: re.findall(r'%[-0-9.]*[sd]', t)
+    if spec(jp) != spec(n):
+        err.append(f'форматные поля %s/%d должны остаться теми же и в том же порядке: {spec(jp)}')
     kind = e['kind']
-    if kind == 'msg':
+    fit = e.get('fit')
+    if fit:        # data-table text is laid out by the engine as written: explicit line breaks, no wrap
+        f = font_named(fit['font'])
+        lines = n.split('\n')
+        if len(lines) > fit['maxlines']:
+            err.append(f"слишком много строк: {len(lines)}, максимум {fit['maxlines']}")
+        over = [l for l in lines if f.width(l) > fit['maxw']]
+        if over:
+            err.append(f"строка шире {fit['maxw']} px: {f.width(over[0])} px")
+    elif kind == 'msg':
         lines = wrap(font, n).split('\n')
         if len(lines) > 3:
             err.append(f'не помещается: {len(lines)} строки, максимум 3')

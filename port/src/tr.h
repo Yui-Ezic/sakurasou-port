@@ -3,15 +3,22 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <cstdarg>
 
 bool trInit(const std::string& dir);       // reads <dir>/ru.pack, mounts <dir>/assets over the ISO
 void trReload();                           // F5: re-reads the pack; applies from the next message
-bool trOn();
+bool trOn();                               // pack loaded and the Russian language selected
+bool trAvailable();                        // a pack is loaded, so Settings offers the language row
+bool trRussian();
+void trSetRussian(bool ru);                // saved in <dir>/lang.txt
 // UI, names, choices, clouds, data tables: looked up by the Japanese text. Returns the input on a miss.
 const std::string& tr(const std::string& jp);
 // Dialogue: looked up by message id + text, because the same Japanese line can need different Russian
 // (speaker gender). Returns the text wrapped to the message window; false on a miss.
 bool trMessage(int id, const std::string& jp, std::string& out);
+// printf with a translatable format string: the format is looked up as a whole, so the Russian format must
+// take the same arguments in the same order.
+std::string trFmt(const char* jpFormat, ...);
 void trDump(const std::string& path);      // dev: wrap of every entry, compared by tl_build.py --verify
 void trFlagCurrent();                      // F8: records the line on screen in <dir>/feedback.tsv
 void trDrawToast();                        // on-screen confirmation for F5 and F8; call once per frame

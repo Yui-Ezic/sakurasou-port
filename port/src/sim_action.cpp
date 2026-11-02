@@ -1,4 +1,5 @@
 // Job 9: action scene (spec_sim sections 5, 6).
+#include "tr.h"
 #include "adv.h"
 #include "sim_scenes.h"
 #include "sim_ui.h"
@@ -76,7 +77,7 @@ struct Panel {
 
 std::string fmt(const char* f, const std::string& name, int done, int cost) {
     char b[256];
-    snprintf(b, sizeof b, f, name.c_str(), kDigitStr[done / 3], kDigitStr[(done % 3) * 3], kDigitStr[cost / 3], kDigitStr[(cost % 3) * 3]);
+    snprintf(b, sizeof b, tr(f).c_str(), name.c_str(), kDigitStr[done / 3], kDigitStr[(done % 3) * 3], kDigitStr[cost / 3], kDigitStr[(cost % 3) * 3]);
     return b;
 }
 
@@ -263,11 +264,11 @@ struct Action : Job, NativeHandler {
     void showLog(const Log& l) {
         const TaskDef& d = simTables().tasks[l.task];
         char b[256]; std::string nm = stripNewlines(d.name);
-        if (l.type == 0) { snprintf(b, sizeof b, "%s\n仕様が完成しました", nm.c_str()); toast.show(b, 1, 0, 3, d.key != 0); }
+        if (l.type == 0) { snprintf(b, sizeof b, tr("%s\n仕様が完成しました").c_str(), nm.c_str()); toast.show(b, 1, 0, 3, d.key != 0); }
         else if (l.type == 1) {
             uint32_t bits = 0; for (int i = 0; i < 6; i++) if (d.gains[i] > 3) bits |= 1u << i;
-            snprintf(b, sizeof b, "%s\n作業が完了しました", nm.c_str()); toast.show(b, d.owner + 2, bits, 3, d.key != 0);
-        } else { snprintf(b, sizeof b, "%s\n他のタスクによる[LOCK]が解除されました", nm.c_str()); toast.show(b, 0, 0, 3, d.key != 0); }
+            snprintf(b, sizeof b, tr("%s\n作業が完了しました").c_str(), nm.c_str()); toast.show(b, d.owner + 2, bits, 3, d.key != 0);
+        } else { snprintf(b, sizeof b, tr("%s\n他のタスクによる[LOCK]が解除されました").c_str(), nm.c_str()); toast.show(b, 0, 0, 3, d.key != 0); }
     }
     void enterA3() {
         st = 3; count = 0;

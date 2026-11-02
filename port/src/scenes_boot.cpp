@@ -220,10 +220,21 @@ struct Title : Job {
     }
 };
 
+// Text that is never translated (the language names): centred at (x, y) in ui coordinates.
+static void rawText(const char* s, float x, float y, Color c, bool left) {
+    float w = 0; for (const char* p = s; *p;) { uint32_t cp = utf8Next(p); w += cp < 0x2e80 ? g_fontM.propAdv(cp) : 14; }
+    float px = 240 + (left ? x - 52 : x - w / 2), py = 136 - y - 7;
+    for (const char* p = s; *p;) {
+        uint32_t cp = utf8Next(p);
+        if (cp < 0x2e80) { g_fontM.drawGlyph(cp, px - g_fontM.propLead(cp), py, c); px += g_fontM.propAdv(cp); }
+        else { g_fontM.drawGlyph(cp, px, py, c); px += 14; }
+    }
+}
+
 struct Option : Job {
-    TexP bg, board, cursor, text; PageHeader hdr; int cur = 0; uint32_t v[8], saved[8]; int exitSt = 0; int tick = 0, hl = 5, hld = 3;
-    void pull(uint32_t* o) { o[0]=g_sys.textSpeed(); o[1]=g_sys.skipAll(); o[2]=g_sys.bgm(); o[3]=g_sys.se(); o[4]=g_sys.voice(); o[5]=g_sys.movie(); o[6]=g_sys.sorataVoice(); o[7]=g_sys.install(); }
-    void push_(uint32_t* o) { g_sys.textSpeed()=o[0]; g_sys.skipAll()=o[1]; g_sys.bgm()=o[2]; g_sys.se()=o[3]; g_sys.voice()=o[4]; g_sys.movie()=o[5]; g_sys.sorataVoice()=o[6]; g_sys.install()=o[7]; g_sys.applyVolumes(); }
+    TexP bg, board, cursor, text; PageHeader hdr; int cur = 0; uint32_t v[9], saved[9]; int rows = trAvailable() ? 9 : 8; int exitSt = 0; int tick = 0, hl = 5, hld = 3;
+    void pull(uint32_t* o) { o[0]=g_sys.textSpeed(); o[1]=g_sys.skipAll(); o[2]=g_sys.bgm(); o[3]=g_sys.se(); o[4]=g_sys.voice(); o[5]=g_sys.movie(); o[6]=g_sys.sorataVoice(); o[7]=g_sys.install(); o[8]=trRussian(); }
+    void push_(uint32_t* o) { g_sys.textSpeed()=o[0]; g_sys.skipAll()=o[1]; g_sys.bgm()=o[2]; g_sys.se()=o[3]; g_sys.voice()=o[4]; g_sys.movie()=o[5]; g_sys.sorataVoice()=o[6]; g_sys.install()=o[7]; g_sys.applyVolumes(); if (rows == 9) trSetRussian(o[8] != 0); }
     void onEnter() override {
         bg = g_gfx.load("option_bg.txg"); board = g_gfx.load("option_bg_board.txg"); cursor = g_gfx.load("option_cursor.txg"); text = g_gfx.load("option_bg_text.txg");
         pull(v); pull(saved); hdr.set(7); hdr.start();
@@ -236,13 +247,14 @@ struct Option : Job {
         if (exitSt == 1) { if (g_trans.covered()) { selfPop(); siblingPush(4); exitSt = 2; } return; }
         if (exitSt) return;
         auto chg = [&](int nv) { if ((uint32_t)nv != v[cur]) { v[cur] = nv; g_audio.playCue(0x2a); push_(v); } };
-        if (g_input.isPressed(BTN_DOWN)) { cur = (cur + 1) % 8; g_audio.playCue(0x2a); }
-        if (g_input.isPressed(BTN_UP)) { cur = (cur + 7) % 8; g_audio.playCue(0x2a); }
+        if (g_input.isPressed(BTN_DOWN)) { cur = (cur + 1) % rows; g_audio.playCue(0x2a); }
+        if (g_input.isPressed(BTN_UP)) { cur = (cur + rows - 1) % rows; g_audio.playCue(0x2a); }
         bool r = g_input.isPressed(BTN_RIGHT), l = g_input.isPressed(BTN_LEFT);
         if (r || l) {
             if (cur == 0) chg(std::clamp((int)v[0] + (r ? 1 : -1), 0, 2));
             else if (cur == 1) chg(r ? 1 : 0);
             else if (cur <= 5) chg(std::clamp((int)v[cur] + (r ? 1 : -1), 0, 5));
+            else if (cur == 8) chg(r ? 1 : 0);
             else chg(l ? 1 : 0);
         }
         if (g_input.isPressed(BTN_CIRCLE)) { push_(v); g_audio.playCue(0x29); exit(); }
@@ -270,6 +282,13 @@ struct Option : Job {
             float y = k ? -73.f : -52.f;
             ui(*text, {168, 0, 192, 16}, 30, y); ui(*text, {192, 0, 216, 16}, 100, y); ui(*text, {216, 0, 232, 16}, 65, y - 1);
             ui(*cursor, {0, 24, 56, 48}, v[6 + k] ? 30 : 100, y);
+        }
+        if (rows == 9) {      // language row: plain text, no art. Names stay in their own script and bypass tr().
+            const float y = 74 - 21.f * 8;
+            rawText("Language / \u8a00\u8a9e", -110, y, {0, 0, 0, 255}, true);
+            ui(*cursor, {0, 24, 56, 48}, v[8] ? 100 : 30, y);
+            rawText("\u65e5\u672c\u8a9e", 30, y, {0, 0, 0, 255}, false);
+            rawText("\u0420\u0443\u0441\u0441\u043a\u0438\u0439", 100, y, {0, 0, 0, 255}, false);
         }
     }
 };

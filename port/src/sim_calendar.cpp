@@ -1,5 +1,6 @@
 // Job 0xc: calendar (spec_sim section 9).
 #include "sim_scenes.h"
+#include "tr.h"
 #include "sim_ui.h"
 
 namespace {
@@ -93,7 +94,8 @@ struct Calendar : Job {
         const SimDay& d = kCalendar[i];
         q(*parts, P[1], x, y, 1, argb(d.holiday ? 0xffeed8ff : 0xfffceab8));
         Color c = d.holiday ? argb(0xff0000ff) : d.weekday == 6 ? argb(0xffff4d00) : argb(0xff000000);
-        q(*font, P[14 + d.weekday], x, y + 20, 1, c);
+        if (trOn()) { static const char* wr[7] = {"вс", "пн", "вт", "ср", "чт", "пт", "сб"}; simTextCentered(wr[d.weekday % 7], x, y + 20, 14, c); }   // baked kanji replaced by text
+        else q(*font, P[14 + d.weekday], x, y + 20, 1, c);
         if (d.day < 10) q(*font, P[21 + d.day], x, y - 17, 1, c);
         else for (int k = 0, v = d.day; k < 2; k++, v /= 10) q(*font, P[21 + v % 10], x + 12 - k * 24.f, y - 17, 1, c);
     }
@@ -101,6 +103,18 @@ struct Calendar : Job {
         g_gfx.fillRect(0, 0, 480, 272, {0, 0, 0, (uint8_t)dim});
         if (group > 3) return;
         float dx = ox, dy = oy;   // ASSUMED layout of the countdown card (constants of FUN_00070684 not traced)
+        if (trOn()) {             // the card is baked kanji ("企画書 提出まで あと 7 日"): two lines of text instead
+            static const char* kTitle[4] = {"企画書提出まで", "α版提出まで", "β版提出まで", "マスターUP提出まで"};
+            auto line = [&](const std::string& t, float y, float a, float s, int cell, Color c) {
+                int sz = std::max(10, (int)(cell * s)); c.a = (uint8_t)std::clamp(a * 255, 0.f, 255.f);
+                Color sh{0, 0, 0, c.a};
+                for (int ox2 : {-1, 1}) for (int oy2 : {-1, 1}) simTextCentered(t, dx + ox2, y + oy2, sz, sh);
+                simTextCentered(t, dx, y, sz, c);
+            };
+            line(tr(kTitle[group]), 30 + dy, a0 / 255.f, s0, 22, {255, 255, 255, 255});
+            line(trFmt("あと%d日", std::clamp(days, 0, 7)), -30 + dy, a2 / 255.f, s2, 28, days <= 3 ? Color{255, 60, 60, 255} : Color{255, 255, 255, 255});
+            return;
+        }
         q(*font2, P[35 + group], -60 + dx, 30 + dy, a0 / 255.f, {}, s0, s0);
         q(*font2, P[39], 60 + dx, 30 + dy, a0 / 255.f, {}, s0, s0);
         q(*font2, P[40], -40 + dx, -30 + dy, a1 / 255.f, {}, s1, s1);
@@ -123,7 +137,8 @@ struct Calendar : Job {
         for (int i = 0; i < 3; i++) q(*parts, P[9 + i], scroll + ev[i] * 72 + 25, -10 - 40);
         const SimDay& d = kCalendar[std::clamp(gd().turn, 0, 102)];
         int mi = d.month < 0xb ? d.month + 1 : d.month - 0xb;
-        q(*font, P[31 + std::clamp(mi, 0, 3)], 0, 80);
+        if (trOn()) { static const char* mr[4] = {"Ноябрь", "Декабрь", "Январь", "Февраль"}; simTextCentered(mr[std::clamp(mi, 0, 3)], 0, 80, 28, {0, 0, 0, 255}); }
+        else q(*font, P[31 + std::clamp(mi, 0, 3)], 0, 80);
         if (st == 5 || st == 4) {
             float a = arrowA / 255.f;
             if (scroll < base(first) - 1) q(*parts, P[12], -230, -10, a);

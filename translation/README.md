@@ -40,6 +40,29 @@ tool, and accepting a line there clears its flag. F5 reloads the pack, also with
 the next message. Flags are stored in `translation/build/feedback.tsv`.
 Rejected lines and lines with errors stay out of the pack, so the game shows the Japanese there.
 
+## Language switch and coverage log
+
+With `--tl`, Settings has a ninth row, Language: 日本語 / Русский. The choice is saved in `translation/build/lang.txt`; Japanese
+also switches the redrawn art off. While playing, every Japanese string that reaches the screen without a translation is
+appended once to `translation/build/untranslated.tsv`.
+
+    python3 tools/tl_coverage.py --run     # shows every scene for 900 frames with a button sweep, then reports
+    python3 tools/tl_coverage.py           # reports on the current log (also after a normal play session)
+
+"In the source" means the string is extracted and just not translated yet. A **GAP** is a string the extractor does not know:
+built at run time or loaded from somewhere new. Gaps are bugs in the tooling; fix them in the engine (`trFmt`, a table in
+`tl_extract.py`) rather than by translating around them.
+
+Texts with a fixed layout carry a `fit` rule from the extractor (line width, line count): data tables, the help-bar ticker.
+There is no automatic wrap for them, so the translator sets `\n` himself; `tl_common.check` flags lines that do not fit.
+
+## Context for drafting (phase 2)
+
+    python3 tools/tl_context.py terms      # candidate terms -> translation/glossary_proposal.tsv
+    python3 tools/tl_context.py voices     # speech sheets   -> translation/characters_ru.md
+
+Both are proposals. Nothing reads them until a person approves them and moves the glossary rows into `glossary_ru.tsv`.
+
 ## Check the engine and tools agree
 
     port/build/sakurasou --tl translation/build --tl-dump /tmp/dump.tsv

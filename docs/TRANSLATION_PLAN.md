@@ -1,6 +1,6 @@
 # Russian translation plan
 
-Status: pilot finished 2026-11-02, decisions made, ready for phase 1.
+Status 2026-11-02: phase 1 done (see below). Phase 2 proposals written; waiting for the glossary and speech sheets to be approved. Drafting has not started.
 
 Decisions by Misha, 2026-11-02:
 - Names: Polivanov system (Масиро Сиина, Дзин, -сэмпай).
@@ -96,6 +96,18 @@ spread over several sessions. An AI editing pass costs about the same again.
 5. **Art.** All redraws, with a font chosen for the look of the original. Decide on the title logo.
 6. **Human review.** See below.
 7. **Playtest and release.** Bot run of all six routes in Russian, then a human run, then update `docs/DIFFERENCES.md`.
+
+## Phase 1 result
+
+- Extractor now covers 25,135 script strings, 47 names, 461 interface strings (incl. `menus_data.h`, `sim_sprites.h`) and 1,788 data-table strings
+  (`_tables.json`, with a `fit` rule per field). Pilot keys are unchanged.
+- Engine: untranslated-string log (`untranslated.tsv`), `trFmt` for built strings, translated task names, Russian save-slot date,
+  Russian help-bar ticker split on word boundaries, Russian weekday/month/countdown card in the calendar instead of baked kanji,
+  language row in Settings (saved in `lang.txt`, Japanese also turns the redrawn art off), dev option `--scene ID`.
+- `tools/tl_coverage.py --run` shows 27 scenes with a button sweep: 0 gaps (every Japanese string shown is in the source).
+  This is a sweep, not a human playthrough; a string that only appears in a rare state could still be missed.
+- Still art, for phase 5: calendar milestone pills (calendar_parts), "TURN"/date headers if baked elsewhere, option-screen row labels.
+- `--scan`: 429 scripts finish with the pack; `SCR_TGS_0000` times out with or without it (a debug script outside the retail flow).
 
 ## Human review: play and flag
 

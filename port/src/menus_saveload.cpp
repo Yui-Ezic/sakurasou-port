@@ -1,5 +1,6 @@
 // Save, load and quick load screens: scenes 0x1a, 0x1b, 0x1c, 0x24, 0x25, 0x26 (spec_flow_menus section 7).
 // The PSP savedata dialogs are gone: files are read and written directly through the game.h file API.
+#include "tr.h"
 #include "menus.h"
 #include "menus_data.h"
 #include "menus_ui.h"
@@ -209,13 +210,23 @@ struct SaveScene : Job {
         const GD& g = s.gd();
         // date (FUN_000bef90) and phase (FUN_000bd6b8)
         const DateEntry& de = kDates[std::clamp(g.turn, 0, 102)];
+        Color wc = de.holiday || de.weekday == 0 ? mu::abgr(0xff0000ff) : de.weekday == 6 ? mu::abgr(0xffff5000) : Color{0, 0, 0, 255};
+        if (trOn()) {      // Russian: DD.MM (day of week), one centred run
+            static const char* wr[7] = {"вс", "пн", "вт", "ср", "чт", "пт", "сб"};
+            char d[16]; snprintf(d, sizeof d, "%02d.%02d (", de.day, de.month);
+            std::string wk = wr[de.weekday % 7];
+            float w = mu::textWidth(d, 14) + mu::textWidth(wk, 14) + mu::textWidth(")", 14), tx = -166 - w / 2, ty = oy + 56 + 7;
+            mu::text(g_fontM, d, tx, ty, {0, 0, 0, 255}, 14, 18); tx += mu::textWidth(d, 14);
+            mu::text(g_fontM, wk, tx, ty, wc, 14, 18); tx += mu::textWidth(wk, 14);
+            mu::text(g_fontM, ")", tx, ty, {0, 0, 0, 255}, 14, 18);
+        } else {
         static const char* wd[7] = {"日", "月", "火", "水", "木", "金", "土"};
         std::string head = fullDigit(de.month / 10 % 10, true) + kFullDigit[de.month % 10] + "月" + fullDigit(de.day / 10 % 10, true) + kFullDigit[de.day % 10] + "日(";
         float w = mu::textWidth(head, 14) + 14 + 14, tx = -166 - w / 2, ty = oy + 56 + 7;
         mu::text(g_fontM, head, tx, ty, {0, 0, 0, 255}, 14, 18); tx += mu::textWidth(head, 14);
-        Color wc = de.holiday || de.weekday == 0 ? mu::abgr(0xff0000ff) : de.weekday == 6 ? mu::abgr(0xffff5000) : Color{0, 0, 0, 255};
         mu::text(g_fontM, wd[de.weekday % 7], tx, ty, wc, 14, 18); tx += 14;
         mu::text(g_fontM, ")", tx, ty, {0, 0, 0, 255}, 14, 18);
+        }
         static const char* phase[9] = {"", "企画段階", "企画段階", "α版", "α版", "β版", "β版", "マスター版", "マスター版"};
         mu::textCentered(g_fontS, phase[std::clamp(g.routeA, 0, 8)], -166, oy + 34, {0, 0, 0, 255}, 10, 14);
         // SCE ranking and sales (FUN_000bda7c, FUN_000bdd70)

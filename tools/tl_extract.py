@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Dumps every translatable string to work/tl/src/<scene>.json, with speaker and order.
 Keys are hashes of the Japanese, so translations in git do not contain the original text."""
-import glob, json, os, re, sys
+import glob, json, os, re, struct, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ssbdis as D
 from tl_common import ROOT, DATA, SRC, key
 
 SKIP = re.compile(r'^(script_|SCR_)')   # debug, test and trial scripts: never reached in the retail flow
-UI_FILES = 'adv common menus menus_misc menus_omake menus_saveload scenes_boot scenes_sim sim_action sim_calendar sim_chart sim_choice sim_contest sim_tasklist'.split()
+UI_FILES = 'adv common menus menus_misc menus_omake menus_saveload scenes_boot scenes_sim sim_action sim_calendar sim_chart sim_choice sim_contest sim_tasklist menus_data sim_sprites'.split()
 
 
 def is_text(s):
@@ -76,13 +76,62 @@ def scene(path):
 def literals():
     out, seen = [], set()
     for f in UI_FILES:
-        s = open(os.path.join(ROOT, 'port', 'src', f + '.cpp'), encoding='utf8').read()
+        s = open(os.path.join(ROOT, 'port', 'src', f + ('.h' if f in ('menus_data', 'sim_sprites') else '.cpp')), encoding='utf8').read()
         s = re.sub(r'//.*', '', s)
+        # help bar ticker: two 480 px items, about 900 px of text in all (HelpBar::draw)
+        helps = {m.group(1) for m in re.finditer(r'g_help\.show\("((?:[^"\\\n]|\\.)*)"|\bkHelp\w* *= *"((?:[^"\\\n]|\\.)*)"', s) for m in [re.match('(.*)', m.group(1) or m.group(2))]}
         for m in re.finditer(r'"((?:[^"\\\n]|\\.)*)"', s):
             t = m.group(1).replace('\\n', '\n').replace('\\"', '"')
-            if re.search(r'[　-鿿＀-￯]', t) and t not in seen and len(t) > 1 and '�' not in t:
+            if re.search(r'[　-鿿＀-￯]', t) and t not in seen and (len(t) > 1 or t == '？'):
                 seen.add(t)
-                out.append(dict(key=key(t), kind='ui', jp=t, speaker='', hint=f))
+                h = f + (' (� = значок крестовины; в переводе пиши ↑↓)' if '�' in t else '')
+                if '\ufffa' in t:
+                    h += ' (знаки U+FFFA U+FFFB — значки кнопок L и R, оставь их как есть)'
+                e = dict(key=key(t), kind='ui', jp=t, speaker='', hint=h)
+                if t in helps:
+                    e.update(hint=h + ' (бегущая строка внизу экрана)', fit=dict(font='font_m', maxw=880, maxlines=1))
+                out.append(e)
+    return out
+
+
+def fit_rule(font, cell, factor, floor, cap=None, extra_lines=0, one_line=False, fixed=None):
+    """How much room the Russian gets: the Japanese width times `factor` (Russian is proportional, so it
+    needs fewer pixels per idea than full-width kana), never below `floor` px. Heuristic, see TRANSLATION_PLAN."""
+    def make(jp):
+        ls = jp.split('\n')
+        chars = max(len(l) for l in ls) if not one_line else sum(len(l) for l in ls)
+        w = fixed or max(floor, int(chars * cell * factor))
+        return dict(font=font, maxw=min(w, cap) if cap else w, maxlines=1 if one_line else len(ls) + extra_lines)
+    return make
+
+
+# (file, record size, [(field, offset, size, fit rule)]): the text fields of the data tables, see port/src/sim_api.h
+TABLES = [
+    ('task_list.tskd', 0x14c, [('name', 4, 64, fit_rule('font_s', 10, 1.5, 90)),
+                               ('short name', 68, 64, fit_rule('font_m', 14, 1.5, 100, one_line=True)),
+                               ('description', 132, 64, fit_rule('font_s', 10, 1.3, 120, cap=300))]),
+    ('team_list.tmd', 0x120, [('team name', 0, 64, fit_rule('font_s', 10, 1.5, 100)),
+                              ('game title', 64, 64, fit_rule('font_m', 14, 1.5, 100)),
+                              ('genre', 128, 64, fit_rule('font_s', 10, 1.5, 100))]),
+    ('comment_list.cmed', 0x15c, [('commenter', 4, 64, fit_rule('font_s', 10, 1.5, 80)),
+                                  ('comment', 68, 0x108, fit_rule('font_s', 10, 1.3, 120, cap=300, extra_lines=1))]),
+    ('tips_list.tipd', 0x188, [('tip title', 8, 64, fit_rule('font_m', 14, 1, 0, one_line=True, fixed=130)),
+                               ('tip text', 136, 256, fit_rule('font_m', 14, 1, 0, extra_lines=1, fixed=400))]),
+]
+
+
+def tables():
+    out, seen = [], set()
+    for fn, rec, fields in TABLES:
+        d = open(os.path.join(DATA, fn), 'rb').read()
+        n = struct.unpack('<I', d[4:8])[0]
+        for i in range(n):
+            for name, off, size, rule in fields:
+                b = d[8 + i * rec + off: 8 + i * rec + off + size].split(b'\0')[0]
+                t = b.decode('utf8')
+                if is_text(t) and t not in seen:
+                    seen.add(t)
+                    out.append(dict(key=key(t), kind='ui', jp=t, speaker='', hint=f'{fn}: {name}', fit=rule(t)))
     return out
 
 
@@ -104,7 +153,9 @@ def main():
               open(os.path.join(SRC, '_names.json'), 'w', encoding='utf8'), ensure_ascii=False, indent=0)
     ui = literals()
     json.dump(ui, open(os.path.join(SRC, '_ui.json'), 'w', encoding='utf8'), ensure_ascii=False, indent=0)
-    print(f'{total} script strings, {len(names)} names, {len(ui)} interface strings')
+    tb = [e for e in tables() if e['key'] not in {u['key'] for u in ui}]
+    json.dump(tb, open(os.path.join(SRC, '_tables.json'), 'w', encoding='utf8'), ensure_ascii=False, indent=0)
+    print(f'{total} script strings, {len(names)} names, {len(ui)} interface strings, {len(tb)} table strings')
 
 
 main()

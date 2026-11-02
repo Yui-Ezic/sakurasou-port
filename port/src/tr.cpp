@@ -3,13 +3,16 @@
 #include "gfx.h"
 #include <algorithm>
 #include <cstring>
+#include <cstdarg>
 #include <cstdio>
 #include <set>
 #include <unordered_map>
 
 static std::string s_dir;
 static std::unordered_map<uint64_t, std::string> s_tab;
-static bool s_on = false;
+static bool s_loaded = false;     // a pack was loaded (--tl)
+static bool s_ru = true;          // Settings: Russian or the original Japanese
+static bool s_on = false;         // loaded && s_ru: translation is applied
 static uint64_t s_curKey = 0;
 static int s_curId = -1;
 static std::string s_curText;
@@ -59,25 +62,74 @@ static bool loadPack() {
 bool trInit(const std::string& dir) {
     s_dir = dir;
     if (!loadPack()) return false;
-    g_fs.setOverrideDir(dir + "/assets");
     if (FILE* f = fopen((dir + "/feedback.tsv").c_str(), "rb")) {
         unsigned long long k; int id;
         while (fscanf(f, "%llx %d", &k, &id) == 2) s_flagged.insert(k);
         fclose(f);
     }
-    return s_on = true;
+    s_loaded = true;
+    if (FILE* f = fopen((dir + "/lang.txt").c_str(), "rb")) { char b[8] = {}; if (fread(b, 1, 7, f) > 0) s_ru = strncmp(b, "ja", 2) != 0; fclose(f); }
+    g_fs.setOverrideDir(s_ru ? dir + "/assets" : "");
+    s_on = s_ru;
+    return true;
+}
+bool trAvailable() { return s_loaded; }
+bool trRussian() { return s_ru; }
+void trSetRussian(bool ru) {
+    if (!s_loaded || ru == s_ru) return;
+    s_ru = s_on = ru;
+    g_fs.setOverrideDir(ru ? s_dir + "/assets" : "");
+    if (FILE* f = fopen((s_dir + "/lang.txt").c_str(), "wb")) { fputs(ru ? "ru\n" : "ja\n", f); fclose(f); }
 }
 void trReload() {
-    if (!s_on) return;
+    if (!s_loaded) return;
     toast(loadPack() ? "Перевод обновлён, со следующей реплики"
                      : "Не удалось загрузить перевод");
 }
 bool trOn() { return s_on; }
 
+static bool validUtf8(const std::string& s) {
+    for (size_t i = 0; i < s.size();) {
+        unsigned char c = s[i]; int n = c < 0x80 ? 1 : (c >> 5) == 6 ? 2 : (c >> 4) == 14 ? 3 : (c >> 3) == 30 ? 4 : 0;
+        if (!n || i + n > s.size()) return false;
+        for (int j = 1; j < n; j++) if ((s[i + j] & 0xc0) != 0x80) return false;
+        i += n;
+    }
+    return true;
+}
+static bool hasJapanese(const std::string& s) {
+    if (!validUtf8(s)) return false;    // uninitialised buffers (dev --scene runs) are not text
+    for (const char* p = s.c_str(); *p;) { uint32_t cp = utf8Next(p); if (cp == 0x3000 || (cp >= 0xff10 && cp <= 0xff19)) continue;    // padding and digits are numbers, not text
+        if (cp >= 0x3000 && cp < 0xa000) return true; if (cp >= 0xff00 && cp < 0xfff0) return true; }
+    return false;
+}
+// Phase 1 check: every Japanese string that reached the screen without a translation is appended once to
+// <dir>/untranslated.tsv ("kind<TAB>text"), so a playthrough shows what the pack is missing.
+static std::set<uint64_t> s_missLogged;
+static void logMiss(const char* kind, const std::string& jp, uint64_t k) {
+    if (!hasJapanese(jp) || !s_missLogged.insert(k).second) return;
+    FILE* f = fopen((s_dir + "/untranslated.tsv").c_str(), "ab");
+    if (!f) return;
+    std::string e;
+    for (char c : jp) { if (c == '\n') e += "\\n"; else e += c; }
+    fprintf(f, "%s\t%s\n", kind, e.c_str());
+    fclose(f);
+}
+
 const std::string& tr(const std::string& jp) {
     if (!s_on || jp.empty()) return jp;
-    auto i = s_tab.find(keyOf("", jp));
-    return i == s_tab.end() ? jp : i->second;
+    uint64_t k = keyOf("", jp);
+    auto i = s_tab.find(k);
+    if (i == s_tab.end()) { logMiss("ui", jp, k); return jp; }
+    return i->second;
+}
+
+std::string trFmt(const char* jpFormat, ...) {
+    const std::string& f = tr(jpFormat);
+    va_list ap; va_start(ap, jpFormat);
+    char b[512]; vsnprintf(b, sizeof b, f.c_str(), ap);
+    va_end(ap);
+    return b;
 }
 
 // Greedy word wrap. tools/tl_common.py wrap() is the same algorithm; change them together.
@@ -109,7 +161,7 @@ bool trMessage(int id, const std::string& jp, std::string& out) {
     uint64_t k = keyOf(std::to_string(id), jp);
     s_curKey = k; s_curId = id; s_curText = jp;
     auto i = s_tab.find(k);
-    if (i == s_tab.end()) return false;
+    if (i == s_tab.end()) { logMiss("msg", jp, k); return false; }
     out = wrapMessage(i->second);
     s_curText = i->second;
     return true;

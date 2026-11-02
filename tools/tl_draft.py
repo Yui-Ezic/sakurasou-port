@@ -2,9 +2,10 @@
 """AI drafting: sends scenes to the local `claude` CLI and stores the Russian in translation/ru/<scene>.jsonl.
   tl_draft.py [--model M] [--tag T] SCENE...     --tag writes to translation/ru/ under the scene name; see --compare
 Lines already translated are kept unless --force. Lines failing the automatic checks are sent back once."""
-import argparse, datetime, json, os, re, subprocess, sys, tempfile
+import argparse, json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tl_common import *
+from tl_ai import ask
 
 BATCH = 120
 SCHEMA = {'type': 'object', 'required': ['lines'], 'properties': {'lines': {'type': 'array', 'items': {
@@ -28,25 +29,8 @@ def item(e):
 
 
 def call(model, system, prompt):
-    with tempfile.TemporaryDirectory() as d:      # empty cwd: no project context in the request
-        sp = os.path.join(d, 'system.md')
-        open(sp, 'w', encoding='utf8').write(system)
-        r = subprocess.run(['claude', '-p', '--model', model, '--output-format', 'json', '--tools', '',
-                            '--system-prompt-file', sp, '--setting-sources', '', '--no-session-persistence',
-                            '--json-schema', json.dumps(SCHEMA)],
-                           input=prompt, capture_output=True, text=True, cwd=d, timeout=1200)
-    if r.returncode:
-        raise SystemExit(f'claude failed: {r.stdout[:400]} {r.stderr[:400]}')
-    o = json.loads(r.stdout)
-    os.makedirs(os.path.join(ROOT, 'work', 'tl'), exist_ok=True)
-    with open(os.path.join(ROOT, 'work', 'tl', 'usage.jsonl'), 'a') as f:
-        f.write(json.dumps(dict(model=model, cost=o.get('total_cost_usd'), usage=o.get('usage'), ms=o.get('duration_ms'),
-                                time=datetime.datetime.now().isoformat())) + '\n')
-    so = o.get('structured_output')
-    if so is None:
-        m = re.search(r'\{.*\}', o.get('result', ''), re.S)
-        so = json.loads(m.group())
-    return so['lines'], o.get('total_cost_usd') or 0
+    so, cost = ask(model, system, prompt, SCHEMA)
+    return so['lines'], cost
 
 
 def draft(scene, model, force, font, gloss):

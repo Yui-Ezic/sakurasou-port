@@ -108,6 +108,7 @@ static int scanAll(const std::string& filter) {
     return 0;
 }
 
+static int g_devScene = -1;   // dev: --scene ID pushes one scene (ids as in createScene) instead of the boot chain
 static int runMain(bool headless, int maxFrames, int shotEvery, const std::string& dir, const std::string& keys, const std::string& playScript, bool autoClick) {
     g_headless = headless;
     SDL_Init(SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER);
@@ -119,6 +120,7 @@ static int runMain(bool headless, int maxFrames, int shotEvery, const std::strin
         root.popAll(); g_advScript = playScript; g_game.reset(); g_sys.load();
         root.push(0xb);
     }
+    if (g_devScene >= 0) { root.popAll(); g_game.reset(); g_sys.load(); root.push(g_devScene); }
     bool quit = false; uint64_t next = SDL_GetTicks64() * 1000;
     // scripted keys: "frame:button,frame:button" using PSP masks, for automated testing
     std::vector<std::pair<int,uint32_t>> script;
@@ -198,6 +200,7 @@ int main(int argc, char** argv) {
             if (args[j] == "--keys" && j + 1 < args.size()) keys = args[j+1];
             if (args[j] == "--headless") hl = true;
             if (args[j] == "--auto") ac = true;
+            if (args[j] == "--scene" && j + 1 < args.size()) g_devScene = (int)strtol(args[j+1].c_str(), nullptr, 0);
             if (args[j] == "--play" && j + 1 < args.size()) play = args[j+1];
         }
         return runMain(hl, fr, every, dir, keys, play, ac);
