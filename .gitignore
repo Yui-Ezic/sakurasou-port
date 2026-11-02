@@ -1,0 +1,13 @@
+# Game data: never commit. Everything here is copyrighted or regenerable from the ISO.
+*.iso
+extracted/
+work/
+ghidra/
+
+# Build output
+port/build/
+__pycache__/
+*.pyc
+
+# Other tools' local state
+.opencode/
