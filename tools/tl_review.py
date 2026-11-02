@@ -44,6 +44,14 @@ def flags():
     return {l.split('\t')[0] for l in open(p, encoding='utf8')} if os.path.exists(p) else set()
 
 
+def unflag(k):
+    """Accepting a line clears its game flag; the game re-reads flags at startup."""
+    p = os.path.join(BUILD, 'feedback.tsv')
+    if os.path.exists(p):
+        lines = open(p, encoding='utf8').readlines()
+        open(p, 'w', encoding='utf8').writelines(l for l in lines if l.split('\t')[0] != k)
+
+
 def scene_list():
     out, fl = [], flags()
     for n in os.listdir(RU):
@@ -111,6 +119,8 @@ class H(http.server.BaseHTTPRequestHandler):
             r.update(ru=d['ru'], st=d['st'], note=d.get('note', ''))
             rows[d['key']] = r
             save_ru(d['scene'], rows)
+            if d['st'] == 'ok':
+                unflag(d['key'])
             build(report=False)
         er, wa = check(FONT, e, d['ru'], GLOSS)
         self.send(dict(errors=er, warnings=wa))

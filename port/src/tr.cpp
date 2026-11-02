@@ -1,7 +1,10 @@
 #include "tr.h"
 #include "fs.h"
 #include "gfx.h"
+#include <algorithm>
+#include <cstring>
 #include <cstdio>
+#include <set>
 #include <unordered_map>
 
 static std::string s_dir;
@@ -9,6 +12,11 @@ static std::unordered_map<uint64_t, std::string> s_tab;
 static bool s_on = false;
 static uint64_t s_curKey = 0;
 static int s_curId = -1;
+static std::string s_curText;
+static std::set<uint64_t> s_flagged;
+static std::string s_toast;
+static int s_toastT = 0;
+static void toast(const std::string& t) { s_toast = t; s_toastT = 150; }
 
 // FNV-1a 64 over context, NUL, text. Must match tools/tl_common.py.
 static uint64_t keyOf(const std::string& ctx, const std::string& s) {
@@ -52,9 +60,18 @@ bool trInit(const std::string& dir) {
     s_dir = dir;
     if (!loadPack()) return false;
     g_fs.setOverrideDir(dir + "/assets");
+    if (FILE* f = fopen((dir + "/feedback.tsv").c_str(), "rb")) {
+        unsigned long long k; int id;
+        while (fscanf(f, "%llx %d", &k, &id) == 2) s_flagged.insert(k);
+        fclose(f);
+    }
     return s_on = true;
 }
-bool trReload() { return s_on && loadPack(); }
+void trReload() {
+    if (!s_on) return;
+    toast(loadPack() ? "Перевод обновлён, со следующей реплики"
+                     : "Не удалось загрузить перевод");
+}
 bool trOn() { return s_on; }
 
 const std::string& tr(const std::string& jp) {
@@ -90,18 +107,43 @@ static std::string wrapMessage(const std::string& s) {
 bool trMessage(int id, const std::string& jp, std::string& out) {
     if (!s_on) return false;
     uint64_t k = keyOf(std::to_string(id), jp);
-    s_curKey = k; s_curId = id;
+    s_curKey = k; s_curId = id; s_curText = jp;
     auto i = s_tab.find(k);
     if (i == s_tab.end()) return false;
     out = wrapMessage(i->second);
+    s_curText = i->second;
     return true;
 }
 
 void trFlagCurrent() {
-    if (!s_on || !s_curKey) return;
+    if (!s_on) return;
+    if (!s_curKey) { toast("Сейчас нет реплики для отметки"); return; }
+    // first characters of the line, so the player can see which one was flagged
+    std::string head; int n = 0;
+    for (const char* p = s_curText.c_str(); *p && n < 28;) {
+        const char* q = p; uint32_t cp = utf8Next(q);
+        if (cp == '\n') head += ' ';
+        else if (cp != 0x25bc) { head.append(p, q - p); n++; }
+        p = q;
+    }
+    if (!s_flagged.insert(s_curKey).second) { toast("Уже отмечено: " + head); return; }
     std::string p = s_dir + "/feedback.tsv";
-    if (FILE* f = fopen(p.c_str(), "ab")) { fprintf(f, "%016llx\t%d\n", (unsigned long long)s_curKey, s_curId); fclose(f); }
-    fprintf(stderr, "translation: flagged line %d\n", s_curId);
+    FILE* f = fopen(p.c_str(), "ab");
+    if (!f) { s_flagged.erase(s_curKey); toast("Не удалось сохранить отметку"); return; }
+    fprintf(f, "%016llx\t%d\n", (unsigned long long)s_curKey, s_curId);
+    fclose(f);
+    toast("Отмечено: " + head);
+}
+
+void trDrawToast() {
+    if (s_toastT <= 0) return;
+    s_toastT--;
+    float a = std::min(1.f, s_toastT / 20.f), w = 0;
+    bool prop = isCyrillic(s_toast);
+    for (const char* p = s_toast.c_str(); *p;) { uint32_t cp = utf8Next(p); w += prop ? g_fontM.propAdv(cp) : 14; }
+    float x = 240 - w / 2;
+    g_gfx.fillRect(x - 8, 6, w + 16, 20, {20, 24, 32, (uint8_t)(220 * a)});
+    g_fontM.drawText(s_toast, x, 9, {255, 255, 255, (uint8_t)(255 * a)});
 }
 
 void trDump(const std::string& path) {

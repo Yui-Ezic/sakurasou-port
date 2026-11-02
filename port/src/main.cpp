@@ -16,6 +16,8 @@
 #include <filesystem>
 #include <algorithm>
 
+static constexpr uint32_t kFakeF5 = 0xf5000000u, kFakeF8 = 0xf8000000u;   // --keys values for real key events
+
 static std::string findIso(const char* argv0) {
     for (auto p : {"sakuraso-no-pet-na-kanojo-psp.iso", "../sakuraso-no-pet-na-kanojo-psp.iso", "../../sakuraso-no-pet-na-kanojo-psp.iso", "game.iso"})
         if (std::filesystem::exists(p)) return p;
@@ -123,11 +125,20 @@ static int runMain(bool headless, int maxFrames, int shotEvery, const std::strin
     for (size_t p = 0; p < keys.size();) {
         size_t e = keys.find(',', p); if (e == std::string::npos) e = keys.size();
         auto t = keys.substr(p, e - p); auto c = t.find(':');
-        if (c != std::string::npos) script.push_back({atoi(t.c_str()), (uint32_t)strtoul(t.c_str() + c + 1, nullptr, 0)});
+        if (c != std::string::npos) {
+            std::string v = t.substr(c + 1);   // PSP mask, or f5 / f8 for a real key event
+            uint32_t m = v == "f5" ? kFakeF5 : v == "f8" ? kFakeF8 : (uint32_t)strtoul(v.c_str(), nullptr, 0);
+            script.push_back({atoi(t.c_str()), m});
+        }
         p = e + 1;
     }
     while (!quit && (maxFrames == 0 || (int)g_frame < maxFrames)) {
-        for (auto& k : script) if (k.first == (int)g_frame) g_injectButtons |= k.second;
+        for (auto& k : script) if (k.first == (int)g_frame) {
+            if (k.second == kFakeF5 || k.second == kFakeF8) {
+                SDL_Event ev{}; ev.type = SDL_KEYDOWN; ev.key.keysym.sym = k.second == kFakeF5 ? SDLK_F5 : SDLK_F8;
+                SDL_PushEvent(&ev);
+            } else g_injectButtons |= k.second;
+        }
         if (autoClick && g_frame % 30 == 7) g_injectButtons |= BTN_CIRCLE;
         if (!playScript.empty() && g_frame > 2 && !root.hasChild()) break;
         pumpEvents(quit);
@@ -135,7 +146,7 @@ static int runMain(bool headless, int maxFrames, int shotEvery, const std::strin
         else { g_trans.update(); g_popup.update(); g_help.update(); }
         root.update();
         g_gfx.beginFrame();
-        root.draw(); root.overlayDraw();
+        root.draw(); root.overlayDraw(); trDrawToast();
         if (shotEvery && g_frame % shotEvery == 0) g_gfx.screenshot(dir + "/f" + std::to_string(g_frame) + ".bmp");
         g_gfx.endFrame();
         g_frame++;

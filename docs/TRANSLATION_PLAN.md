@@ -53,8 +53,7 @@ Tested by running:
 - Review tool in a real browser: edit, glossary warning clears, accept, file and pack update.
 - The ISO's size and date are unchanged.
 
-Not tested: F5 reload and F8 flag keys (the handlers are written, but headless runs cannot send keyboard keys), the
-simulation screens in Russian, and anything by a human reader. The translation quality has not been judged by a native
+Not tested: the simulation screens in Russian, and anything by a human reader. The translation quality has not been judged by a native
 speaker. My read of the samples is that it is good but not final.
 
 Measured:
@@ -109,7 +108,7 @@ Because nobody reads every line, three things become mandatory:
 3. Six routes do not all get played closely at first. Lines flagged in one route feed the style guide, and the AI re-edits
    the other routes with those corrections.
 
-F8 and F5 are now the core of review, so testing them with real key presses is the first task of phase 1.
+F8 and F5 are the core of review. Both show an on-screen confirmation, and Misha's real F8 presses were recorded correctly.
 
 ## Risks
 

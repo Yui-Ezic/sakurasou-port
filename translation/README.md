@@ -35,7 +35,9 @@ font is installed.
     ~/tools/sakura-venv/bin/python tools/tl_images.py
     port/build/sakurasou --tl translation/build
 
-F8 flags the line on screen (it shows as ⚑ in the review tool). F5 reloads the pack. Neither key has been tested yet.
+F8 flags the line on screen and shows a confirmation at the top of the game window. Flagged lines get ⚑ in the review
+tool, and accepting a line there clears its flag. F5 reloads the pack, also with a confirmation; the change appears from
+the next message. Flags are stored in `translation/build/feedback.tsv`.
 Rejected lines and lines with errors stay out of the pack, so the game shows the Japanese there.
 
 ## Check the engine and tools agree

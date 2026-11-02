@@ -5,7 +5,7 @@
 #include <string>
 
 bool trInit(const std::string& dir);       // reads <dir>/ru.pack, mounts <dir>/assets over the ISO
-bool trReload();                           // F5: re-reads the pack; applies from the next message
+void trReload();                           // F5: re-reads the pack; applies from the next message
 bool trOn();
 // UI, names, choices, clouds, data tables: looked up by the Japanese text. Returns the input on a miss.
 const std::string& tr(const std::string& jp);
@@ -14,6 +14,7 @@ const std::string& tr(const std::string& jp);
 bool trMessage(int id, const std::string& jp, std::string& out);
 void trDump(const std::string& path);      // dev: wrap of every entry, compared by tl_build.py --verify
 void trFlagCurrent();                      // F8: records the line on screen in <dir>/feedback.tsv
+void trDrawToast();                        // on-screen confirmation for F5 and F8; call once per frame
 inline bool isCyrillic(const std::string& s) {
     for (unsigned char c : s) if (c == 0xd0 || c == 0xd1) return true;
     return false;
