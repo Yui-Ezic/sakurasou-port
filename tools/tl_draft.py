@@ -12,11 +12,60 @@ SCHEMA = {'type': 'object', 'required': ['lines'], 'properties': {'lines': {'typ
     'type': 'object', 'required': ['k', 'ru'], 'properties': {'k': {'type': 'string'}, 'ru': {'type': 'string'}}}}}}
 
 
-def system_prompt(entries, gloss):
+def glossary_notes():
+    out = {}
+    for l in open(os.path.join(ROOT, 'translation', 'glossary_ru.tsv'), encoding='utf8'):
+        f = l.rstrip('\n').split('\t') + ['', '', '', '']
+        if not l.startswith('#') and f[3]:
+            out[f[0]] = f[3]
+    return out
+
+
+def voice_sheets():
+    """speaker (Japanese) -> speech sheet text from translation/characters_ru.md"""
+    p = os.path.join(ROOT, 'translation', 'characters_ru.md')
+    out = {}
+    if os.path.exists(p):
+        for part in open(p, encoding='utf8').read().split('\n## ')[1:]:
+            m = re.match(r'(.*?)\((.+?), реплик', part)
+            if m:
+                out[m.group(2)] = '## ' + part.strip()
+    return out
+
+
+def summaries():
+    p = os.path.join(ROOT, 'translation', 'summaries_ru.jsonl')
+    out = {}
+    if os.path.exists(p):
+        for l in open(p, encoding='utf8'):
+            r = json.loads(l)
+            out[r['scene']] = r['summary']
+    return out
+
+
+def system_prompt(entries, gloss, scene=None):
     text = open(os.path.join(ROOT, 'translation', 'style_ru.md'), encoding='utf8').read()
     blob = ' '.join(e['jp'] + ' ' + e.get('speaker', '') for e in entries)
-    terms = [f'{j} → {r}' for j, r, _ in gloss if j in blob]
-    return text + '\n\n## Глоссарий этой сцены (обязателен)\n' + '\n'.join(terms) + '\n'
+    notes = glossary_notes()
+    terms = [f'{j} → {r}' + (f' ({notes[j]})' if notes.get(j) else '') for j, r, _ in gloss if j in blob]
+    out = text + '\n\n## Глоссарий этой сцены (обязателен)\n' + '\n'.join(terms) + '\n'
+    sheets = voice_sheets()
+    who = sorted({e['speaker'] for e in entries if e.get('speaker') in sheets})
+    if who:
+        out += '\n## Речевые карты говорящих (утверждены)\n' + '\n\n'.join(sheets[w] for w in who) + '\n'
+    if scene:
+        sm = summaries()
+        order = [x for x in scenes() if not x.startswith('_')]
+        i = order.index(scene) if scene in order else -1
+        prev = order[i - 1] if i > 0 and order[i - 1][:8] == scene[:8] else None
+        ctx = []
+        if prev and prev in sm:
+            ctx.append(f'Предыдущая сцена: {sm[prev]}')
+        if scene in sm:
+            ctx.append(f'Эта сцена: {sm[scene]}')
+        if ctx:
+            out += '\n## Содержание\n' + '\n'.join(ctx) + '\n'
+    return out
 
 
 def item(e):
@@ -46,7 +95,7 @@ def draft(scene, model, force, font, gloss):
                   + (f'Предыдущие реплики уже переведены:\n{json.dumps(before, ensure_ascii=False)}\n' if before else '')
                   + 'Верни JSON {"lines":[{"k":ключ,"ru":перевод}]}, все ключи без пропусков.\n'
                   + json.dumps([item(e) for e in part], ensure_ascii=False))
-        lines, c = call(model, system_prompt(part, gloss), prompt)
+        lines, c = call(model, system_prompt(part, gloss, scene), prompt)
         spent += c
         got = {l['k']: l['ru'] for l in lines if l['k'] in byk}
         fix = []
@@ -58,7 +107,7 @@ def draft(scene, model, force, font, gloss):
         if fix:
             p = 'Исправь эти строки, ошибки указаны в поле err. Верни JSON {"lines":[{"k":ключ,"ru":перевод}]}.\n' + json.dumps(
                 [dict(item(e), ru=ru, err=errs) for e, ru, errs in fix], ensure_ascii=False)
-            lines, c = call(model, system_prompt([f[0] for f in fix], gloss), p)
+            lines, c = call(model, system_prompt([f[0] for f in fix], gloss, scene), p)
             spent += c
             got.update({l['k']: l['ru'] for l in lines if l['k'] in byk})
         for e in part:
@@ -70,11 +119,25 @@ def draft(scene, model, force, font, gloss):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
-    ap.add_argument('scenes', nargs='+')
+    ap.add_argument('scenes', nargs='*')
+    ap.add_argument('--all', action='store_true', help='every scene in reading order: common route, heroine routes, events, names, interface, tables')
     ap.add_argument('--model', default='sonnet')
     ap.add_argument('--force', action='store_true')
     a = ap.parse_args()
     font, gloss = Font(), load_glossary()
-    for s in a.scenes:
-        n, c = draft(s, a.model, a.force, font, gloss)
-        print(f'{s}: {n} lines, ${c:.4f}', flush=True)
+    todo = a.scenes
+    if a.all:
+        prio = ['MAIN', 'TUTORIAL', 'LIFE', 'SMSR', 'SMSK', 'SNNM', 'SJIN', 'SRYU', 'SOTH', 'YMSR']
+        rank = lambda n: (prio.index(n.split('_')[1]) if n.split('_')[1] in prio else len(prio), n)
+        story = sorted((n for n in scenes() if not n.startswith('_')), key=rank)
+        todo = story + ['_names', '_ui', '_tables']
+    total = 0
+    for s in todo:
+        try:
+            n, c = draft(s, a.model, a.force, font, gloss)
+        except (Exception, SystemExit) as ex:       # one failed call must not stop an overnight run; rerun resumes
+            print(f'{s}: FAILED {ex}', flush=True)
+            continue
+        total += c
+        if n:
+            print(f'{s}: {n} lines, ${c:.4f}, total ${total:.2f}', flush=True)

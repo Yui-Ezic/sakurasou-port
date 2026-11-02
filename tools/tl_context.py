@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Phase 2: context for the drafting pass, made by an AI read of the whole corpus.
   tl_context.py terms [--model M] [--limit N]   candidate terms -> translation/glossary_proposal.tsv (a person approves it)
+  tl_context.py summaries [--model M]           one paragraph per scene -> translation/summaries_ru.jsonl
   tl_context.py voices [--model M]              speech sheet per speaker -> translation/characters_ru.md
 Nothing here is used by the drafter until a person has approved it (see docs/TRANSLATION_PLAN.md)."""
 import argparse, collections, json, os, re, sys
@@ -182,11 +183,58 @@ def cmd_voices(a):
     print(f'{len(out)} sheets -> {VOICES}, ${spent:.2f}')
 
 
+SUMMARIES = os.path.join(ROOT, 'translation', 'summaries_ru.jsonl')
+SUM_SCHEMA = {'type': 'object', 'required': ['scenes'], 'properties': {'scenes': {'type': 'array', 'items': {
+    'type': 'object', 'required': ['scene', 'summary'], 'properties': {'scene': {'type': 'string'}, 'summary': {'type': 'string'}}}}}}
+SUM_PROMPT = """Ты помощник переводчика визуальной новеллы «Sakurasou no Pet na Kanojo». Для каждой сцены напиши по-русски краткое
+содержание в 1-3 предложения: кто участвует, где и когда (если видно), что происходит и чем кончается, какой тон. Это справка
+для переводчика, который переведёт сцену по частям: упомяни всё, что влияет на выбор слов (кто кому что обещал, шутки, кто с кем
+в каких отношениях, чья реплика к кому обращена). Имена бери из глоссария. Не выдумывай того, чего нет в тексте.
+Верни по записи на каждую сцену, ключ scene копируй точно."""
+
+
+def cmd_summaries(a):
+    gloss = '\n'.join(f'{j} → {r}' for j, r, _ in load_glossary())
+    system = open(os.path.join(ROOT, 'translation', 'style_ru.md'), encoding='utf8').read() + '\n\n## Глоссарий\n' + gloss + '\n\n' + SUM_PROMPT
+    done = {}
+    if os.path.exists(SUMMARIES) and not a.force:
+        for l in open(SUMMARIES, encoding='utf8'):
+            r = json.loads(l); done[r['scene']] = r['summary']
+    texts = {}
+    for s in scenes():
+        if s.startswith('_') or s in done:
+            continue
+        texts[s] = '\n'.join((f'{e["speaker"]}: ' if e['speaker'] else '') + jp_for_ai(e['jp']) for e in scene_src(s) if e['kind'] == 'msg')
+    todo = [s for s in texts if texts[s].strip()]
+    batches, cur, size = [], [], 0
+    for s in todo:
+        t = texts[s][:9000]
+        if cur and size + len(t) > 28000:
+            batches.append(cur); cur, size = [], 0
+        cur.append((s, t)); size += len(t)
+    if cur:
+        batches.append(cur)
+    spent = 0
+    for i, b in enumerate(batches):
+        prompt = '\n\n'.join(f'=== {s} ===\n{t}' for s, t in b)
+        out, c = ask(a.model, system, prompt, SUM_SCHEMA)
+        spent += c
+        for r in out['scenes']:
+            if r['scene'] in texts:
+                done[r['scene']] = r['summary'].strip()
+        with open(SUMMARIES, 'w', encoding='utf8') as f:
+            for s in sorted(done):
+                f.write(json.dumps(dict(scene=s, summary=done[s]), ensure_ascii=False) + '\n')
+        print(f'  batch {i + 1}/{len(batches)}: {len(done)} scenes, ${spent:.2f}', flush=True)
+    print(f'{len(done)} summaries -> {SUMMARIES}')
+
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
-    ap.add_argument('cmd', choices=['terms', 'voices'])
+    ap.add_argument('cmd', choices=['terms', 'voices', 'summaries'])
     ap.add_argument('--model', default='opus')
+    ap.add_argument('--force', action='store_true')
     ap.add_argument('--limit', type=int, default=0)
     ap.add_argument('--min-lines', type=int, default=0, help='voices: speakers with at least this many lines (default 50)')
     a = ap.parse_args()
-    {'terms': cmd_terms, 'voices': cmd_voices}[a.cmd](a)
+    {'terms': cmd_terms, 'voices': cmd_voices, 'summaries': cmd_summaries}[a.cmd](a)
