@@ -1,6 +1,13 @@
 # Russian translation plan
 
-Status: pilot finished 2026-11-02, full run waiting on the decisions at the end.
+Status: pilot finished 2026-11-02, decisions made, ready for phase 1.
+
+Decisions by Misha, 2026-11-02:
+- Names: Polivanov system (Масиро Сиина, Дзин, -сэмпай).
+- Review: play and flag only. There is no line-by-line human read, so the AI editing pass carries the quality.
+- Release: public release planned. Ship only the Russian pack, redrawn art and tools; players supply their own ISO.
+- Title logo: keep the Japanese original.
+
 This replaces `.opencode/plans/sakurasou-ru-translation.md`. Its goals stand (Russian, full scope, AI draft plus human
 review, ISO untouched, override directory). Three of its technical assumptions turned out wrong; see "What changed".
 
@@ -91,21 +98,24 @@ spread over several sessions. An AI editing pass costs about the same again.
 6. **Human review.** See below.
 7. **Playtest and release.** Bot run of all six routes in Russian, then a human run, then update `docs/DIFFERENCES.md`.
 
-## Human review, kept realistic
+## Human review: play and flag
 
-Reading all 20k lines is on the order of 70+ hours (my estimate at 300 lines an hour). So review is tiered:
+Review happens by playing. Press F8 on anything wrong, then fix flagged lines in the review tool. The rest of the review
+tool stays available for spot checks and for the lines the automatic checks warn about.
 
-1. Must read: glossary, interface, choices, the opening, every ending, the key scene of each route.
-2. Automatic list: anything with a warning in the review tool.
-3. Sample: 5% of each route. If the error rate is high, the fix goes into the style guide or glossary and the AI redoes that route.
-4. Play: read the game normally, press F8 on anything wrong, then filter by flagged lines in the review tool.
+Because nobody reads every line, three things become mandatory:
+1. The glossary and character speech sheets are approved by a person before drafting.
+2. Phase 4 runs on all text, and uses a separate model pass that reads whole scenes as an editor.
+3. Six routes do not all get played closely at first. Lines flagged in one route feed the style guide, and the AI re-edits
+   the other routes with those corrections.
 
-Notes left on lines feed the next AI pass, so a correction made once can be applied across the corpus.
+F8 and F5 are now the core of review, so testing them with real key presses is the first task of phase 1.
 
 ## Risks
 
 - Readability: the 14 px bitmap font is fine at 3x scale but thin. A sharper font at higher resolution is possible later.
 - Built strings may be missed by exact lookup. Phase 1's log finds them.
 - A save stores the on-screen line, so a line saved in Russian comes back in Russian in Japanese mode. Cosmetic.
-- Licences: a public release should ship only the Russian pack and redrawn art, with the player supplying the ISO. Redrawn
-  art contains original artwork, so it needs care. The art font must allow embedding.
+- Public release: with no full human read, errors will reach players. Consider calling the first release a beta.
+- Licences: redrawn art contains original artwork, so it may need rebuilding from the player's ISO at install time, which
+  `tl_images.py` already does in principle. The art font must allow embedding and redistribution.
