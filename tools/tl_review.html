@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Проверка перевода</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&display=swap">
+<style>
+:root{--bg:#f4f3ef;--card:#fff;--ink:#22242a;--mut:#6b6f7a;--line:#dcdad3;--ok:#1e7a4a;--fix:#b4531a;--err:#b3261e;--acc:#2a5db0}
+@media (prefers-color-scheme:dark){:root{--bg:#17181b;--card:#212328;--ink:#e8e8e6;--mut:#9a9da6;--line:#34363d;--ok:#5cc08b;--fix:#e59a62;--err:#f08a82;--acc:#7fa8ec}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif}
+#side{position:fixed;inset:0 auto 0 0;width:270px;overflow:auto;border-right:1px solid var(--line);padding:12px}
+#main{margin-left:270px;padding:14px 20px 120px;max-width:980px}
+h1{font-size:15px;margin:0 0 10px}.sc{display:block;width:100%;text-align:left;border:0;background:none;color:inherit;padding:6px 8px;border-radius:6px;cursor:pointer;font:inherit;font-size:13px}
+.sc.on{background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}.sc small{display:block;color:var(--mut)}
+#bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:2;border-bottom:1px solid var(--line);margin-bottom:12px}
+label{font-size:13px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.card.ok{border-left-color:var(--ok)}.card.fix{border-left-color:var(--fix)}.card.reject{border-left-color:var(--err)}.card.cur{outline:2px solid var(--acc)}
+.who{font-size:12px;color:var(--mut);margin-bottom:3px;font-family:system-ui,'Noto Sans JP',sans-serif}.jp{white-space:pre-wrap;font:15px/1.5 'Noto Sans JP',system-ui,sans-serif;margin-bottom:6px}
+textarea{width:100%;font:inherit;background:transparent;color:inherit;border:1px solid var(--line);border-radius:6px;padding:6px 8px;resize:vertical;min-height:54px}
+input.note{width:100%;font:13px system-ui;background:transparent;color:inherit;border:1px solid var(--line);border-radius:6px;padding:4px 8px;margin-top:6px}
+canvas{display:block;margin-top:6px;image-rendering:pixelated;max-width:100%;border-radius:4px}
+.row{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:none;color:inherit;border-radius:6px;padding:3px 10px;font:inherit;font-size:13px;cursor:pointer}
+.btn:hover{border-color:var(--acc)}.msg{font-size:12.5px}.e{color:var(--err)}.w{color:var(--fix)}.tag{font-size:12px;color:var(--mut)}
+@media (max-width:760px){#side{position:static;width:auto;border:0;max-height:220px}#main{margin:0;padding:12px 16px}}
+</style></head><body>
+<nav id="side"><h1>Сцены</h1><div id="list"></div></nav>
+<main id="main"><div id="bar"><b id="title">Выберите сцену</b>
+<label><input type="checkbox" id="onlyTodo"> только непроверенные</label>
+<label><input type="checkbox" id="onlyIssues"> только с замечаниями</label>
+<span class="tag">Ctrl+Enter: принять и дальше · Ctrl+↓/↑: соседняя строка</span></div><div id="rows"></div></main>
+<script>
+let M, atlas, cur=null, rows=[];
+const $=s=>document.querySelector(s);
+const TOK=/^(†[^‡]*‡|‡|▼)/;
+function wrap(s,w){let o=[],x=0,af=0,last=-1,i=0;const ch=[...s];
+ while(i<ch.length){const m=ch.slice(i,i+12).join('').match(TOK);
+  if(m){o.push(m[0]);i+=[...m[0]].length;continue}
+  const c=ch[i++];if(c=='\n'){o.push(c);x=af=0;last=-1;continue}
+  const a=adv(c);if(c==' '){last=o.length;af=0}else{if(x+a>w&&last>=0){o[last]='\n';x=af;last=-1}af+=a}
+  o.push(c);x+=a}
+ return o.join('')}
+function adv(c){const g=M.glyphs[c];return g?g[2]:M.cell}
+function norm(s){return s.replace(/[—–]/g,'―').replace(/\.\.\./g,'…')}
+function plain(s){return s.replace(/†[^‡]*‡/g,'').replace(/[‡▼]/g,'')}
+function drawLine(ctx,s,x,y,color){for(const c of s){const g=M.glyphs[c];if(g){const[n,lead]=g;
+  ctx.drawImage(tint(color),(n%M.cols)*M.cell,Math.floor(n/M.cols)*M.cell,M.cell,M.cell,x-lead,y,M.cell,M.cell)}x+=adv(c)}}
+const tints={};function tint(col){if(tints[col])return tints[col];const c=document.createElement('canvas');c.width=atlas.width;c.height=atlas.height;
+ const t=c.getContext('2d');t.drawImage(atlas,0,0);t.globalCompositeOperation='source-in';t.fillStyle=col;t.fillRect(0,0,c.width,c.height);return tints[col]=c}
+function preview(cv,r){const ctx=cv.getContext('2d'),s=plain(norm(r.ru));ctx.imageSmoothingEnabled=false;
+ if(r.kind=='msg'){cv.width=480;cv.height=74;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;
+  c.fillStyle='#f6f9fd';c.fillRect(8,22,464,52);c.strokeStyle='#7fb0dc';c.strokeRect(8.5,22.5,463,51);c.fillStyle='#3f7fc0';c.fillRect(8,2,168,20);
+  if(r.whoRu)drawLine(c,r.whoRu,14,5,'#fff');
+  const L=wrap(s,M.width).split('\n'),st=L.length>=3?15:18,y0=L.length>=3?27:34;L.forEach((l,i)=>drawLine(c,l,30,y0+i*st,L.length>3?'#c00':'#000'));
+ }else{cv.width=300;const L=s.split('\n');cv.height=8+L.length*18;const c=cv.getContext('2d');c.fillStyle='#f6f9fd';c.fillRect(0,0,300,cv.height);
+  L.forEach((l,i)=>drawLine(c,l,8,4+i*18,'#000'))}
+ cv.style.width=cv.width*2+'px'}
+async function api(u,b){const r=await fetch(u,b?{method:'POST',body:JSON.stringify(b)}:{});return r.json()}
+async function loadList(){const l=await api('/api/scenes');$('#list').innerHTML='';for(const s of l){const b=document.createElement('button');
+ b.className='sc'+(s.name==cur?' on':'');b.innerHTML=`${s.name}<small>${s.ok}/${s.total} принято${s.flagged?` · ⚑ ${s.flagged}`:''}</small>`;b.onclick=()=>open(s.name);$('#list').append(b)}}
+async function open(n){cur=n;rows=await api('/api/scene?name='+encodeURIComponent(n));$('#title').textContent=n;render();loadList()}
+function msgs(r){return [...r.errors.map(m=>`<div class="msg e">✖ ${m}</div>`),...r.warnings.map(m=>`<div class="msg w">▲ ${m}</div>`),r.flagged?'<div class="msg w">⚑ отмечено в игре</div>':''].join('')}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function render(){const box=$('#rows');box.innerHTML='';const todo=$('#onlyTodo').checked,iss=$('#onlyIssues').checked;
+ rows.forEach((r,i)=>{if(todo&&r.st=='ok')return;if(iss&&!r.errors.length&&!r.warnings.length&&!r.flagged)return;
+  const d=document.createElement('div');d.className='card '+r.st;d.dataset.i=i;
+  d.innerHTML=`<div class="who">${esc(r.whoRu||r.who||'—')} · ${r.kind}${r.by?' · '+esc(r.by):''}</div><div class="jp">${esc(r.jp.replace(/▼/g,''))}</div>
+  <textarea>${esc(r.ru)}</textarea><canvas></canvas><div class="m">${msgs(r)}</div>
+  <input class="note" placeholder="Заметка для ИИ или себя" value="${esc(r.note).replace(/"/g,'&quot;')}">
+  <div class="row"><button class="btn" data-s="ok">✓ Принять</button><button class="btn" data-s="fix">Доработать</button><button class="btn" data-s="reject">Отклонить</button><span class="tag st">${r.st}</span></div>`;
+  const ta=d.querySelector('textarea'),cv=d.querySelector('canvas'),note=d.querySelector('.note');
+  ta.oninput=()=>{r.ru=ta.value;preview(cv,r)};preview(cv,r);
+  d.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>save(r,d,b.dataset.s,note.value));
+  ta.onfocus=()=>{document.querySelectorAll('.cur').forEach(x=>x.classList.remove('cur'));d.classList.add('cur')};
+  ta.onblur=note.onchange=()=>{if(ta.value!=r.saved||note.value!=r.note)save(r,d,r.st||'draft',note.value,true)};r.saved=ta.value;
+  box.append(d)})}
+async function save(r,d,st,note,stay){r.st=st;r.note=note;r.saved=r.ru;let x;
+ try{x=await api('/api/save',{scene:cur,key:r.key,ru:r.ru,st,note})}catch(e){r.saved=undefined;d.querySelector('.m').innerHTML='<div class="msg e">✖ не сохранено: сервер не ответил</div>';return}
+ r.errors=x.errors;r.warnings=x.warnings;
+ d.className='card '+st+(d.classList.contains('cur')?' cur':'');d.querySelector('.m').innerHTML=msgs(r);d.querySelector('.st').textContent=st;if(!stay)loadList()}
+function step(n){const a=document.activeElement.closest?.('.card');if(!a)return;const t=n>0?a.nextElementSibling:a.previousElementSibling;if(t){t.querySelector('textarea').focus();t.scrollIntoView({block:'center'})}}
+addEventListener('keydown',e=>{if(!e.ctrlKey)return;if(e.key=='Enter'){const d=document.activeElement.closest?.('.card');if(d){e.preventDefault();save(rows[d.dataset.i],d,'ok',d.querySelector('.note').value);step(1)}}
+ if(e.key=='ArrowDown'){e.preventDefault();step(1)}if(e.key=='ArrowUp'){e.preventDefault();step(-1)}});
+$('#onlyTodo').onchange=$('#onlyIssues').onchange=render;
+(async()=>{M=await api('/api/metrics');atlas=new Image();atlas.src='/font.png';await atlas.decode();loadList()})();
+</script></body></html>

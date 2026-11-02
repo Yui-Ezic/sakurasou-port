@@ -1,4 +1,5 @@
 #include "gfx.h"
+#include "tr.h"
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
@@ -213,12 +214,37 @@ void Font::drawGlyph(uint32_t cp, float x, float y, Color c, float s) {
     if (!i && cp != 0x20) return;
     g_gfx.drawSub(*tex, {(i % atlasCols) * sz, (i / atlasCols) * sz, sz, sz}, {x, y, sz * s, sz * s}, 1, c);
 }
-void Font::drawText(const std::string& t, float x, float y, Color c, int pitch) {
+void Font::inkExtent(uint32_t cp, int& lo, int& hi) const {
+    lo = sz; hi = -1;
+    if (cp > 0xffff) return;
+    uint16_t i; memcpy(&i, &data[0x10 + cp * 2], 2);
+    if (!i) return;
+    const uint8_t* g = glyph(cp);
+    int rowBytes = sz / 2;
+    for (int y = 0; y < sz; y++) for (int x = 0; x < sz; x++) {
+        uint8_t b = g[y * rowBytes + x / 2], v = x & 1 ? b >> 4 : b & 15;
+        if (v > 2) { lo = std::min(lo, x); hi = std::max(hi, x); }
+    }
+}
+int Font::propLead(uint32_t cp) const {
+    if (cp >= 0x2e80) return 0;
+    int lo, hi; inkExtent(cp, lo, hi);
+    return hi < 0 ? 0 : lo;
+}
+int Font::propAdv(uint32_t cp) const {       // tools/tl_common.py has the same rule
+    if (cp >= 0x2e80) return sz;
+    int lo, hi; inkExtent(cp, lo, hi);
+    return hi < 0 ? (sz > 11 ? 4 : 3) : hi - lo + 2;
+}
+void Font::drawText(const std::string& text, float x, float y, Color c, int pitch) {
+    const std::string& t = tr(text);
+    bool prop = isCyrillic(t);
     if (!pitch) pitch = sz;
     const char* p = t.c_str(); float ox = x;
     while (*p) {
         uint32_t cp = utf8Next(p);
         if (cp == '\n') { x = ox; y += sz + 2; continue; }
-        drawGlyph(cp, x, y, c); x += pitch;
+        if (prop) { drawGlyph(cp, x - propLead(cp), y, c); x += propAdv(cp); }
+        else { drawGlyph(cp, x, y, c); x += pitch; }
     }
 }

@@ -20,9 +20,11 @@ struct TextWin {
     std::string name;
     int msgId = -1; float acc = 0; int a = 0, b = 0;
     float penX = 0; int penY = 0;
+    bool prop = false; int step = 18;   // Russian: proportional glyphs; 3-line messages use a tighter pitch
     bool inLink = false; std::vector<MsgLink> links; int sel = -1;
     std::vector<AdvGlyph> glyphs;
     void clearText() { glyphs.clear(); links.clear(); penX = 0; penY = 0; inLink = false; sel = -1; }
+    void beginText();
 };
 
 struct BgImg { TexP tex; std::string file; int alpha = 0, state = 0, t = 0, n = 0; float x = 0, y = 0, cx = 248, cy = 144; };

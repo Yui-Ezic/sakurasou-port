@@ -30,3 +30,6 @@ Tested means run in this project. Nothing has been compared frame-by-frame with 
 - About 26 `ASSUMED` comments in port/src mark remaining guesses. Spec open items: docs/spec_sim.md section 14, docs/spec_flow_menus.md section 13, docs/spec_adv.md section 16.
 - Saves are not interchangeable with PSP saves: the outer layout matches, but the job-state blob uses its own encoding.
 - Cards' row-to-action mapping in the action scene is [ASSUMED]; a wrong mapping would change gameplay, so this is the first thing to check against the original.
+
+## Russian mode
+Only with `--tl`. Cyrillic text uses proportional spacing and word wrap instead of the original fixed 14 px cell, and up to 3 lines at a 15 px pitch. Long Russian title-menu labels use wider sprite cells. Japanese mode is unchanged. Status: `docs/TRANSLATION_PLAN.md`.

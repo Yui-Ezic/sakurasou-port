@@ -11,6 +11,8 @@ Needs CMake, Ninja, a C++20 compiler, SDL2 2.0.18+ and FFmpeg libraries (libavco
 ## Run
     port/build/sakurasou --iso path/to/sakuraso-no-pet-na-kanojo-psp.iso
 
+Add `--tl translation/build` to play with the Russian translation; see `translation/README.md`.
+
 `--iso` can be omitted when the ISO is in the current directory or a parent. Saves go to the SDL per-user folder (Linux: `~/.local/share/Sakurasou/SakurasouPort/`), or to `SAKURA_SAVE_DIR` if set.
 
 ## Controls

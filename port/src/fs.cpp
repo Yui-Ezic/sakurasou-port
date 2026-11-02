@@ -183,7 +183,20 @@ bool AssetFS::mount(const std::string& path) {
     if (!data.open(fp, o1) || !strm.open(fp, o2)) { error = "bad CPK"; return false; }
     return true;
 }
-Bytes AssetFS::read(const std::string& n) { return data.contains(n) ? data.read(n) : strm.read(n); }
+static bool readFile(const std::string& p, Bytes& out) {
+    FILE* f = fopen(p.c_str(), "rb");
+    if (!f) return false;
+    fseek(f, 0, SEEK_END); long n = ftell(f); fseek(f, 0, SEEK_SET);
+    out.resize(n > 0 ? n : 0);
+    size_t got = n > 0 ? fread(out.data(), 1, n, f) : 0;
+    fclose(f);
+    return (long)got == n;
+}
+Bytes AssetFS::read(const std::string& n) {
+    Bytes o;
+    if (!overrideDir.empty() && readFile(overrideDir + "/" + n, o)) return o;
+    return data.contains(n) ? data.read(n) : strm.read(n);
+}
 bool AssetFS::exists(const std::string& n) const { return data.contains(n) || strm.contains(n); }
 std::vector<std::string> AssetFS::names() const {
     auto a = data.names(); auto b = strm.names(); a.insert(a.end(), b.begin(), b.end()); return a;

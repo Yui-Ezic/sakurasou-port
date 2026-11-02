@@ -1,4 +1,5 @@
 #include "sim_ui.h"
+#include "tr.h"
 #include <algorithm>
 #include <sstream>
 
@@ -19,24 +20,30 @@ void qStrip(const Tex& t, const SQ& l, const SQ& r, float x, float y, float a, C
 }
 
 static bool half(uint32_t cp) { return cp < 0x80; }
-float textWidth(const std::string& s, int cell) {
+static Font& simFont(int cell) { return cell > 11 ? g_fontM : g_fontS; }
+float textWidth(const std::string& text, int cell) {
+    const std::string& s = tr(text); bool prop = isCyrillic(s);
+    Font& f = simFont(cell); float sc = (float)cell / f.cell();
     float w = 0; const char* p = s.c_str();
-    while (*p) { uint32_t cp = utf8Next(p); if (cp == '\n') break; w += half(cp) ? cell * 0.5f : cell; }
+    while (*p) { uint32_t cp = utf8Next(p); if (cp == '\n') break; w += prop ? f.propAdv(cp) * sc : half(cp) ? cell * 0.5f : cell; }
     return w;
 }
-void simText(const std::string& s, float x, float y, int cell, Color c, int lineH) {
+void simText(const std::string& text, float x, float y, int cell, Color c, int lineH) {
+    const std::string& s = tr(text); bool prop = isCyrillic(s);
     if (!lineH) lineH = cell + 4;
-    Font& f = cell > 11 ? g_fontM : g_fontS;
+    Font& f = simFont(cell);
     float sc = (float)cell / f.cell(), px = 240 + x, py = 136 - y;
     const char* p = s.c_str();
     while (*p) {
         uint32_t cp = utf8Next(p);
         if (cp == '\n') { px = 240 + x; py += lineH; continue; }
+        if (prop) { f.drawGlyph(cp, px - f.propLead(cp) * sc, py, c, sc); px += f.propAdv(cp) * sc; continue; }
         f.drawGlyph(cp, px, py, c, sc);
         px += half(cp) ? cell * 0.5f : cell;
     }
 }
-void simTextCentered(const std::string& s, float x, float y, int cell, Color c, int lineH) {
+void simTextCentered(const std::string& text, float x, float y, int cell, Color c, int lineH) {
+    const std::string& s = tr(text);
     if (!lineH) lineH = cell + 4;
     std::vector<std::string> lines; std::stringstream ss(s); std::string l;
     while (std::getline(ss, l)) lines.push_back(l);

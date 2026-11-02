@@ -1,0 +1,15 @@
+# файл	тип	русский текст
+title_parts.txg	title	Новая игра|Продолжить|Бонусы|Дополнения|Настройки|Установка
+title_start.txg	start	Нажмите кнопку
+common_page_menu.txg	page	Меню
+common_page_option.txg	page	Настройки
+common_page_save.txg	page	Сохранение
+common_page_load.txg	page	Загрузка
+common_page_backlog.txg	page	История
+common_page_tips.txg	page	Справка
+common_page_calendar.txg	page	Календарь
+common_page_task.txg	page	Задачи
+LC_SKG.loc	loc	Сакурасо, ворота
+LC_SIO.loc	loc	Школа Суймэй
+LC_SKWR.loc	loc	Сакурасо, комната Сораты
+LC_SIG.loc	loc	Школа Суймэй, ворота

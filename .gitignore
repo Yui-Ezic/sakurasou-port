@@ -11,3 +11,5 @@ __pycache__/
 
 # Other tools' local state
 .opencode/
+translation/build/
+.playwright-mcp/

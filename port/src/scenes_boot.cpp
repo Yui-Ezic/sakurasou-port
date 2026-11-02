@@ -1,4 +1,5 @@
 // Boot chain, logos, movies, title, option (spec_flow_menus sections 2-5.1).
+#include "tr.h"
 #include "common.h"
 #include "game.h"
 #include "movie.h"
@@ -205,7 +206,9 @@ struct Title : Job {
         if (state >= 2) for (int i = 0; i < 6; i++) {
             bool sel = state >= 3 && i == cur;
             ui(*parts, sel ? Spr{160, 0, 216, 56} : Spr{160, 56, 216, 112}, bx[i], -80);
-            ui(*parts, sel ? org[i] : blue[i], bx[i], -80);
+            Spr label = sel ? org[i] : blue[i];
+            if (trOn()) label.x1 = label.x0 + 78;   // Russian labels use the full 78 px cell
+            ui(*parts, label, bx[i], -80);
         }
         if (state < 2) ui(*startT, {0, 0, 184, 32}, 0, -80, blink / 255.f);
         ui(*copy, {0, 0, 256, 16}, -90, -120); ui(*copy, {0, 16, 256, 32}, 166, -120);

@@ -1,4 +1,5 @@
 #include "audio.h"
+#include "tr.h"
 #include "fs.h"
 #include "gfx.h"
 #include "vm.h"
@@ -169,6 +170,8 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Cannot open the game image (%s). Use --iso <path>. %s\n", iso.c_str(), g_fs.error.c_str());
         return 2;
     }
+    for (size_t i = 0; i + 1 < args.size(); i++) if (args[i] == "--tl" && !trInit(args[i + 1])) return 2;
+    for (size_t i = 0; i + 1 < args.size(); i++) if (args[i] == "--tl-dump") { g_fontM.load("font_m.fnt"); trDump(args[i + 1]); return 0; }
     for (size_t i = 0; i < args.size(); i++) {
         if (args[i] == "--test-audio" && i + 2 < args.size()) return testAudio(args[i+1].c_str(), args[i+2].c_str());
         if (args[i] == "--scan") return scanAll(i + 1 < args.size() && args[i+1][0] != '-' ? args[i+1] : "");

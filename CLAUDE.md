@@ -30,6 +30,7 @@ Reverse engineering "Sakurasou no Pet na Kanojo" (PSP) to build a native PC port
 cmake, ninja, clang, SDL2 2.32 installed.
 
 ## Port status (keep updated)
+- Russian translation in progress on branch `translation-ru`: plan and pilot results in `docs/TRANSLATION_PLAN.md`, workflow in `translation/README.md`. Text is swapped at display time (`port/src/tr.cpp`); never patch `.ssb` files. `translation/ru/` must stay free of Japanese text.
 - Playable from boot to all six route endings; see `docs/DIFFERENCES.md` for what is tested, untested, and different. User docs: `port/README.md`.
 - Source: `port/` (C++20, SDL2, libav*, vendored clHCA). Build: `cmake -S port -B port/build -G Ninja && ninja -C port/build`. Reads assets directly from the unmodified ISO.
 - Dev: `port/build/sakurasou --scan [filter]`, `--play SCN_x.ssb`, `--headless --frames N --shot-every N DIR --keys "frame:mask,..."` with `SDL_VIDEODRIVER=dummy`.

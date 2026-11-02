@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "tr.h"
 #include <SDL.h>
 #include <cstdio>
 #include <cstring>
@@ -95,6 +96,8 @@ void pumpEvents(bool& quit) {
         case SDL_TEXTINPUT: if (s_text) g_textTyped += e.text.text; break;
         case SDL_KEYDOWN:
             if (s_text && e.key.keysym.sym == SDLK_BACKSPACE) g_textBackspace++;
+            if (e.key.keysym.sym == SDLK_F5) trReload();
+            if (e.key.keysym.sym == SDLK_F8) trFlagCurrent();
             if (e.key.keysym.sym == SDLK_F11 || (e.key.keysym.sym == SDLK_RETURN && (e.key.keysym.mod & KMOD_ALT))) g_gfx.toggleFullscreen();
             break;
         case SDL_MOUSEMOTION: g_gfx.toCanvas(e.motion.x, e.motion.y, g_input.mouseX, g_input.mouseY); g_input.mouseMoved = true; break;

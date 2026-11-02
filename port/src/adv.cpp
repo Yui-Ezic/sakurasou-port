@@ -1,4 +1,5 @@
 #include "adv.h"
+#include "tr.h"
 #include "characters_api.h"
 #include <algorithm>
 #include <cmath>
@@ -46,6 +47,11 @@ void AdvScene::onPause() {}
 
 // ---- tokens ----
 namespace { struct Tok { int type; uint32_t cp; int id; }; }
+void TextWin::beginText() {
+    clearText(); prop = isCyrillic(raw); step = 18;
+    int lines = 1; for (char c : raw) if (c == '\n') lines++;
+    if (prop && lines >= 3) { step = 15; penY = -7; }
+}
 static Tok nextTok(const std::string& s, size_t& p) {
     if (p >= s.size()) return {0, 0, 0};
     const char* c = s.c_str() + p;
@@ -73,7 +79,7 @@ void AdvScene::typing(TextWin& w) {
         Tok t = nextTok(w.raw, w.pos);
         switch (t.type) {
         case 0: g_audio.stop(CH_VOICE, 4); g_sys.setTextRead(w.msgId); w.text = TextWin::T_IDLE; return;
-        case 1: w.penX = 0; w.penY += 18; break;
+        case 1: w.penX = 0; w.penY += w.step; break;
         case 2: w.text = TextWin::T_WAIT; w.a = w.b = 0; return;
         case 3:
             if (w.links.size() < 4) { w.links.push_back({t.id, (int)w.penX, w.penY, 0, 0}); w.inLink = true; g_sys.setBit(0x3154, t.id - 1); }
@@ -81,8 +87,8 @@ void AdvScene::typing(TextWin& w) {
         case 4: if (!w.links.empty() && w.inLink) { w.links.back().x1 = (int)w.penX; w.links.back().y1 = w.penY; } w.inLink = false; break;
         default: {
             Color c = w.inLink ? Color{0x22, 0x92, 0xe9, 255} : Color{0, 0, 0, 255};
-            w.glyphs.push_back({t.cp, (int)w.penX, w.penY, c});
-            w.penX += t.type == 5 ? 7 : 14; w.acc -= 1;
+            w.glyphs.push_back({t.cp, (int)w.penX - (w.prop ? g_fontM.propLead(t.cp) : 0), w.penY, c});
+            w.penX += w.prop ? g_fontM.propAdv(t.cp) : t.type == 5 ? 7 : 14; w.acc -= 1;
             if (w.acc <= 0) return;
         }
         }
@@ -371,7 +377,13 @@ void AdvScene::drawWinB() {
     };
     nine(64, 16); nine(0, 40);
     float hy = 136 - 64 - dy;
-    g_fontM.drawText("差出人：", 36, hy - 7, {0, 0, 0, 255}); g_fontM.drawText(w.name, 92, hy - 7, {0, 0, 0, 255});
+    g_fontM.drawText("差出人：", 36, hy - 7, {0, 0, 0, 255});
+    float nameX = 92;                                  // the original's fixed slot suits the 4-character label
+    if (const std::string& lbl = tr("差出人："); isCyrillic(lbl)) {
+        nameX = 36 + 8;
+        const char* p = lbl.c_str(); while (*p) nameX += g_fontM.propAdv(utf8Next(p));
+    }
+    g_fontM.drawText(w.name, nameX, hy - 7, {0, 0, 0, 255});
     drawText(w, 36, 136 - 16 - dy);
     if (w.text == TextWin::T_WAIT) sub(*texMail, {24, 0, 24, 16}, 228, 136 + 24 - 8 - dy, 24, 16);
 }
@@ -409,7 +421,7 @@ void AdvScene::drawClouds() {
         float px = 240 + c.x, py = 136 - c.y, w = 160 * s, h = 80 * s;
         sub(*texCloud, {0, fi * 40, 80, 40}, px - w / 2, py - h / 2, w, h, a);
         if (a > 0.5f) {
-            std::vector<std::string> ls; std::stringstream ss(c.text); std::string l; while (std::getline(ss, l)) ls.push_back(l);
+            std::vector<std::string> ls; std::stringstream ss(tr(c.text)); std::string l; while (std::getline(ss, l)) ls.push_back(l);
             float H = 14 + 18.f * ((int)ls.size() - 1), y = py - H / 2;
             for (auto& t : ls) { uiFontCentered(g_fontM, t, c.x, 136 - y - 7, {0, 0, 0, (uint8_t)(255 * a)}); y += 18; }
         }
@@ -557,7 +569,9 @@ int AdvScene::native(Vm& v, int id, int32_t& ret) {
     case 125: return 0;
     case 126: {
         TextWin& w = active();
-        w.raw = v.argStr(1); w.pos = 0; w.msgId = v.arg(2); w.clearText();
+        w.raw = v.argStr(1); w.pos = 0; w.msgId = v.arg(2);
+        { std::string ru; if (trMessage(w.msgId, w.raw, ru)) w.raw = std::move(ru); }
+        w.beginText();
         voicePrepare(v.argStr(0));
         std::string plain; size_t p = 0;
         for (;;) { size_t b = p; Tok t = nextTok(w.raw, p); if (!t.type) break; if (t.type == 1) plain += '\n'; else if (t.type >= 5) plain.append(w.raw, b, p - b); }
@@ -649,9 +663,9 @@ void AdvScene::loadState(const uint8_t* p, size_t) {
         t->win = r.i() ? TextWin::W_OPEN : TextWin::W_CLOSED; t->plate = r.i() ? TextWin::W_OPEN : TextWin::W_CLOSED;
         t->name = r.s(); t->raw = r.s(); t->msgId = r.i(); int pos = r.i();
         // retype up to the saved position, leaving the window waiting at the marker
-        t->pos = 0; t->clearText();
+        t->pos = 0; t->beginText();
         while ((int)t->pos < pos) { size_t q = t->pos; Tok k = nextTok(t->raw, q); if (!k.type || (int)q > pos) break; float save = 1e9f; t->acc = save; if (k.type == 2) { t->pos = q; break; } 
-            if (k.type == 1) { t->penX = 0; t->penY += 18; t->pos = q; } else if (k.type >= 5) { t->glyphs.push_back({k.cp, (int)t->penX, t->penY, {0, 0, 0, 255}}); t->penX += k.type == 5 ? 7 : 14; t->pos = q; } else t->pos = q; }
+            if (k.type == 1) { t->penX = 0; t->penY += t->step; t->pos = q; } else if (k.type >= 5) { t->glyphs.push_back({k.cp, (int)t->penX - (t->prop ? g_fontM.propLead(k.cp) : 0), t->penY, {0, 0, 0, 255}}); t->penX += t->prop ? g_fontM.propAdv(k.cp) : k.type == 5 ? 7 : 14; t->pos = q; } else t->pos = q; }
         t->text = (pos > 0 && t->pos < t->raw.size() + 1 && t->pos > 0) ? TextWin::T_WAIT : TextWin::T_IDLE;
     }
     for (int i = 0; i < 2; i++) { bg[i].file = r.s(); bg[i].alpha = r.i(); bg[i].x = (float)r.i(); bg[i].y = (float)r.i(); bg[i].state = bg[i].alpha ? 1 : 0;

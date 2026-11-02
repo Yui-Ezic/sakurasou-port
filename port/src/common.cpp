@@ -1,4 +1,5 @@
 #include "common.h"
+#include "tr.h"
 #include <SDL.h>
 #include <cmath>
 #include <cstdio>
@@ -64,9 +65,11 @@ void ui(const Tex& t, Spr s, float x, float y, float a, float sx, float sy, floa
     SDL_SetTextureColorMod(t.t, c.r, c.g, c.b);
     SDL_RenderCopyExF(g_gfx.renderer(), t.t, &src, &d, -rot, nullptr, SDL_FLIP_NONE);
 }
-void uiFontCentered(Font& f, const std::string& s, float x, float y, Color c) {
-    int n = 0; const char* p = s.c_str(); while (*p) { utf8Next(p); n++; }
-    f.drawText(s, 240 + x - n * f.cell() / 2.f, 136 - y - f.cell() / 2.f, c);
+void uiFontCentered(Font& f, const std::string& text, float x, float y, Color c) {
+    const std::string& s = tr(text); bool prop = isCyrillic(s);
+    float w = 0; const char* p = s.c_str();
+    while (*p) { uint32_t cp = utf8Next(p); w += prop ? f.propAdv(cp) : f.cell(); }
+    f.drawText(s, 240 + x - w / 2.f, 136 - y - f.cell() / 2.f, c);
 }
 
 // ---- transition ----
@@ -103,16 +106,23 @@ static float s_mx() { return g_input.mouseX - 240.f; }
 static float s_my() { return 136.f - g_input.mouseY; }
 static int glyphCount(const std::string& s) { int n = 0; const char* p = s.c_str(); while (*p) { if (utf8Next(p) != '\n') n++; } return n; }
 // advance of the game's text layouters: full width w, half width w/2 (FUN_00013ad8)
-static float layoutWidth(const std::string& s, float adv) {
+static float layoutWidth(const std::string& text, float adv) {
+    const std::string& s = tr(text); bool prop = isCyrillic(s);
     float w = 0; const char* p = s.c_str();
-    while (*p) { uint32_t c = utf8Next(p); if (c == '\n') continue; w += (c < 0x80 ? adv / 2 : adv); }
+    while (*p) { uint32_t c = utf8Next(p); if (c == '\n') continue; w += prop ? g_fontM.propAdv(c) : (c < 0x80 ? adv / 2 : adv); }
     return w;
 }
-static void layoutLine(const std::string& s, float x, float y, Color c, float adv) {
+static void layoutLine(const std::string& text, float x, float y, Color c, float adv) {
+    const std::string& s = tr(text); bool prop = isCyrillic(s);
     const char* p = s.c_str();
-    while (*p) { uint32_t cp = utf8Next(p); if (cp == '\n') continue; g_fontM.drawGlyph(cp, x, y, c); x += cp < 0x80 ? adv / 2 : adv; }
+    while (*p) {
+        uint32_t cp = utf8Next(p); if (cp == '\n') continue;
+        if (prop) { g_fontM.drawGlyph(cp, x - g_fontM.propLead(cp), y, c); x += g_fontM.propAdv(cp); }
+        else { g_fontM.drawGlyph(cp, x, y, c); x += cp < 0x80 ? adv / 2 : adv; }
+    }
 }
-void Popup::open(const std::string& t, bool twoB, bool defYes) {
+void Popup::open(const std::string& jp, bool twoB, bool defYes) {
+    const std::string& t = tr(jp);
     text = t; two = twoB; cur = two && !defYes ? 1 : 0; state = 1; h = 1; resultYes = resultCancel = false;
     lines.clear(); std::stringstream ss(t); std::string l; float tw = 0;
     while (std::getline(ss, l)) { lines.push_back(l); tw = std::max(tw, 5.5f + layoutWidth(l, 14.5f)); }
@@ -173,7 +183,7 @@ void Popup::draw() {
 }
 
 // ---- help bar (spec 6.2, FUN_000100d4). Two ticker items 480 apart, both move 1 px per frame, wrap at -480 ----
-void HelpBar::show(const std::string& t) { text = t; mode = 1; scroll = 0; if (!tex) tex = g_gfx.load("common_help.txg"); }
+void HelpBar::show(const std::string& t) { text = tr(t); mode = 1; scroll = 0; if (!tex) tex = g_gfx.load("common_help.txg"); }
 void HelpBar::hide() { mode = 2; }
 void HelpBar::update() {
     if (mode == 1) { if (y < -124) y = std::min(-124.f, y + 2); else scroll = (scroll + 1) % 960; }

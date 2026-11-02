@@ -31,9 +31,12 @@ public:
     Bytes read(const std::string& name);
     bool exists(const std::string& name) const;
     std::vector<std::string> names() const;
+    // files here win over the ISO, by asset name (translated art). The ISO is never written.
+    void setOverrideDir(const std::string& d) { overrideDir = d; }
     std::string error;
 private:
     FILE* fp = nullptr;
     Cpk data, strm;
+    std::string overrideDir;
 };
 extern AssetFS g_fs;

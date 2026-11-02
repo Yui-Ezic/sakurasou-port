@@ -67,12 +67,16 @@ class Font {
 public:
     bool load(const std::string& asset);
     int cell() const { return sz; }
+    // proportional metrics for Russian: px to shift the cell left, px to advance. CJK stays full width.
+    int propLead(uint32_t cp) const;
+    int propAdv(uint32_t cp) const;
     const uint8_t* glyph(uint32_t cp) const;      // 4bpp packed glyph or null
     // draws a glyph into an RGBA8 buffer position via a cached atlas
     void drawGlyph(uint32_t cp, float x, float y, Color c, float scale = 1);
     void drawText(const std::string& utf8, float x, float y, Color c, int pitch = 0);
 private:
     Bytes data; int sz = 0;
+    void inkExtent(uint32_t cp, int& lo, int& hi) const;
     std::vector<uint8_t> atlas; TexP tex; int atlasCols = 256;
 };
 extern Font g_fontM, g_fontS;

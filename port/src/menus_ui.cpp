@@ -1,22 +1,27 @@
 #include "menus_ui.h"
+#include "tr.h"
 
 namespace mu {
-float textWidth(const std::string& s, float adv) {
+float textWidth(const std::string& text, float adv) {
+    const std::string& s = tr(text); bool prop = isCyrillic(s);
     float w = 0, best = 0; const char* p = s.c_str();
-    while (*p) { uint32_t c = utf8Next(p); if (c == '\n') { best = std::max(best, w); w = 0; continue; } w += c < 0x80 ? adv / 2 : adv; }
+    while (*p) { uint32_t c = utf8Next(p); if (c == '\n') { best = std::max(best, w); w = 0; continue; } w += prop ? g_fontM.propAdv(c) : c < 0x80 ? adv / 2 : adv; }
     return std::max(best, w);
 }
 int textLines(const std::string& s) { int n = s.empty() ? 0 : 1; for (char c : s) if (c == '\n') n++; return n; }
-void text(Font& f, const std::string& s, float x, float yTop, Color c, float adv, float lineH, float alpha) {
+void text(Font& f, const std::string& raw, float x, float yTop, Color c, float adv, float lineH, float alpha) {
+    const std::string& s = tr(raw); bool prop = isCyrillic(s);
     c.a = (uint8_t)(c.a * alpha);
     const char* p = s.c_str(); float px = 240 + x, py = 136 - yTop;
     while (*p) {
         uint32_t cp = utf8Next(p);
         if (cp == '\n') { px = 240 + x; py += lineH; continue; }
+        if (prop) { f.drawGlyph(cp, px - f.propLead(cp), py, c); px += f.propAdv(cp); continue; }
         f.drawGlyph(cp, px, py, c); px += cp < 0x80 ? adv / 2 : adv;
     }
 }
-void textCentered(Font& f, const std::string& s, float x, float yCentre, Color c, float adv, float lineH, float alpha) {
+void textCentered(Font& f, const std::string& raw, float x, float yCentre, Color c, float adv, float lineH, float alpha) {
+    const std::string& s = tr(raw);
     int n = textLines(s); float yTop = yCentre + n * lineH / 2 - (lineH - f.cell()) / 2;
     size_t st = 0;
     for (int i = 0; i < n; i++) {
