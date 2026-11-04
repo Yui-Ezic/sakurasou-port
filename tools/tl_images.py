@@ -110,6 +110,10 @@ def menubutton(im, text):
         im.paste(blue, (x0 + 5, y0 + 1, x0 + 84, y0 + 18))
         l = fit_label(t, 13, (255, 255, 255), (60, 140, 170), 0, 76)
         im.alpha_composite(l, (x0 + 5 + (79 - l.width) // 2, y0 + 1 + (17 - l.height) // 2 + 1))
+    if len(names) > 9:                                 # DLC tile at (424,200)
+        im.paste(blue, (429, 201, 508, 218))
+        l = fit_label(names[9], 13, (255, 255, 255), (60, 140, 170), 0, 76)
+        im.alpha_composite(l, (429 + (79 - l.width) // 2, 201 + (17 - l.height) // 2 + 1))
     # envelope front at (176,120)-(288,240): the orange band is tilted about 30 degrees; replace the white lettering
     env = im.crop((176, 120, 288, 240))
     a = env.load()
@@ -581,6 +585,14 @@ def legal(im, text):
     return im
 
 
+def actionwin(im, text):
+    """action_window.txg: the 'absent' bear's plate (11,70)-(21,92); the word is turned 90 degrees like the original's column."""
+    fill(im, (12, 71, 20, 91), (238, 236, 236, 255))
+    l = fit_label(text, 8, (60, 45, 30), (60, 45, 30), 0, 18).rotate(90, expand=True)
+    im.alpha_composite(l, (16 - l.width // 2, 81 - l.height // 2))
+    return im
+
+
 def swizzle(px, wbytes, h):
     out = bytearray(len(px))
     src = 0
@@ -651,6 +663,8 @@ def main():
             im = squareparts(im, text)
         elif kind == 'legal':
             im = legal(im, text)
+        elif kind == 'actionwin':
+            im = actionwin(im, text)
         elif kind == 'simcard':
             im = simcard(im, text)
         elif kind == 'optiontext':
