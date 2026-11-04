@@ -446,6 +446,67 @@ def rowlist(im, name, text):
     return im
 
 
+def goldtext(text, size, maxw, top=(255, 238, 110), bot=(238, 168, 20), edge=(255, 255, 255)):
+    """Big gold lettering with a vertical gradient, thin orange rim and a white halo (ranking banner)."""
+    while True:
+        f = face(size)
+        l, t, r, b = f.getbbox(text)
+        if (r - l) / SS <= maxw or size <= 10:
+            break
+        size -= 2
+    pad = 6 * SS
+    m = Image.new('L', (r - l + pad * 2, b - t + pad * 2), 0)
+    ImageDraw.Draw(m).text((pad - l, pad - t), text, font=f, fill=255, stroke_width=max(1, size * SS // 25), stroke_fill=255)
+    halo = m.filter(ImageFilter.MaxFilter(4 * SS + 1)).filter(ImageFilter.GaussianBlur(SS / 2))
+    rim = m.filter(ImageFilter.MaxFilter(SS + 1))
+    out = Image.new('RGBA', m.size, edge + (0,)); out.putalpha(halo)
+    o2 = Image.new('RGBA', m.size, (214, 120, 10, 255)); o2.putalpha(rim); out.alpha_composite(o2)
+    grad = Image.new('RGBA', m.size)
+    gp = grad.load()
+    for y in range(m.height):
+        k = min(1.0, max(0.0, (y - pad) / max(1, b - t)))
+        c = tuple(int(top[i] + (bot[i] - top[i]) * k) for i in range(3)) + (255,)
+        for x in range(m.width):
+            gp[x, y] = c
+    grad.putalpha(m)
+    out.alpha_composite(grad)
+    return out.resize((out.width // SS, out.height // SS), Image.BOX)
+
+
+def rankfont(im, text):
+    """contest_ranking_font.txg 256x128: the engine draws only rect (0,0,240,64); the second line is rebuilt as well."""
+    t = text.split('|')
+    clear(im, (0, 0, 256, 128))
+    for (y0, y1), s in (((0, 64), t[0]), ((64, 128), t[1])):
+        l = goldtext(s, 56, 240)
+        im.alpha_composite(l, ((256 - l.width) // 2, y0 + (y1 - y0 - l.height) // 2))
+    return im
+
+
+def dlc(im, name, text):
+    t = text.split('|')
+    ink = (30, 30, 30)
+    if name == 'dlc_story.txg':               # 第N話, four 48x16 rows
+        for i in range(4):
+            clear(im, (0, 16 * i, 48, 16 * i + 16))
+            l = fit_label(t[i], 12, ink, ink, 0, 46)
+            im.alpha_composite(l, (2, 16 * i + (16 - l.height) // 2))
+    elif name == 'dlc_parts.txg':             # store note at (72,0)-(256,48), four lines
+        clear(im, (72, 0, 256, 64))
+        for i in range(4):
+            l = fit_label(t[i], 11, ink, ink, 0, 182)
+            im.alpha_composite(l, (74, 12 * i + (12 - l.height) // 2 + 1))
+    else:                                     # dlc_parts_title.txg: two-line logo left of the knickers
+        clear(im, (0, 0, 196, 64)); clear(im, (190, 40, 256, 64))
+        pal1 = [(70, 140, 225), (110, 80, 200)]
+        l = rainbow(t[0], 13, pal1, 190)
+        im.alpha_composite(l, (4, 8))
+        pal2 = [(150, 80, 190), (70, 175, 90), (240, 130, 40), (235, 80, 160), (80, 150, 220)]
+        l = rainbow(t[1], 19, pal2, 192)
+        im.alpha_composite(l, (2, 28))
+    return im
+
+
 def swizzle(px, wbytes, h):
     out = bytearray(len(px))
     src = 0
@@ -506,6 +567,10 @@ def main():
             im = infonames(im, text)
         elif kind == 'rowlist':
             im = rowlist(im, name, text)
+        elif kind == 'rankfont':
+            im = rankfont(im, text)
+        elif kind == 'dlc':
+            im = dlc(im, name, text)
         elif kind == 'simcard':
             im = simcard(im, text)
         elif kind == 'optiontext':
