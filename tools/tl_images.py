@@ -277,20 +277,20 @@ def mode_color(im, box):
     return c.most_common(1)[0][0] if c else (255, 255, 255, 255)
 
 
-def erase(im, box, col=None):
+def erase(im, box, col=None, solid=False):
     """Repaints only the opaque pixels of a rect with the flat background colour, so a shaped plate keeps its outline."""
     col = col or mode_color(im, box)
     px = im.load()
     for y in range(box[1], box[3]):
         for x in range(box[0], box[2]):
             if px[x, y][3] > 0:
-                px[x, y] = col[:3] + (px[x, y][3],)
+                px[x, y] = col[:3] + ((255 if solid else px[x, y][3]),)
     return col
 
 
-def retext(im, box, text, size, fill, outline=None, spread=1, col=None, maxw=None):
+def retext(im, box, text, size, fill, outline=None, spread=1, col=None, maxw=None, solid=False):
     """Erases the lettering in box, then centres new lettering there."""
-    bg = erase(im, box, col)
+    bg = erase(im, box, col, solid)
     if outline is None:
         outline = tuple(int(v * 0.5) for v in bg[:3])
     l = fit_label(text, size, fill, outline, spread, maxw or (box[2] - box[0]))
@@ -361,6 +361,63 @@ def savewindow(im, text):
     return im
 
 
+def rainbow(text, size, palette, maxw):
+    """Chunky multicolour lettering with a white halo (the 'friendship up' banner)."""
+    while True:
+        parts = [label(c, size, palette[i % len(palette)], (255, 255, 255), 2) if c != ' ' else None for i, c in enumerate(text)]
+        adv = [(p.width - 4) if p else size // 3 for p in parts]
+        if sum(adv) + 4 <= maxw or size <= 8:
+            break
+        size -= 1
+    h = max(p.height for p in parts if p)
+    out = Image.new('RGBA', (sum(adv) + 4, h), (0, 0, 0, 0))
+    x = 0
+    for p, a in zip(parts, adv):
+        if p:
+            out.alpha_composite(p, (x, 0))
+        x += a
+    return out
+
+
+def friend(im, text):
+    """conversation_friend.txg: two banners, (32,0,192,32) and (32,32,256,64)."""
+    t = text.split('|')
+    pal = [(70, 165, 225), (175, 105, 195), (140, 185, 40), (240, 85, 40), (250, 120, 160), (250, 170, 20)]
+    for (x0, y0, x1, y1), s, sz in (((32, 0, 190, 32), t[0], 17), ((32, 32, 256, 64), t[1], 18)):
+        clear(im, (x0, y0, x1, y1))
+        l = rainbow(s, sz, pal, x1 - x0 - 4)
+        im.alpha_composite(l, (x0 + (x1 - x0 - l.width) // 2, y0 + (y1 - y0 - l.height) // 2))
+    return im
+
+
+def infoparts(im, text):
+    """information_parts.txg: six stat chips round the radar, tab, friendship label, health/mood bars.
+    text = Шарм|Объём|Стабил.|Драйв|Эмоции|Красота|Способности|Близость Lv|Здоровье|Мотивация (chips: top, left-up, right-up, left-down, right-down, bottom)"""
+    t = text.split('|')
+    chips = [(46, 3, 81, 16), (3, 25, 36, 38), (91, 25, 124, 38), (3, 58, 36, 71), (91, 58, 124, 71), (46, 81, 81, 94)]
+    for (x0, y0, x1, y1), s in zip(chips, t[:6]):
+        retext(im, (x0 + 3, y0 + 2, x1 - 3, y1 - 2), s, 10, (70, 70, 80), (70, 70, 80), 0, maxw=x1 - x0 - 6)
+    retext(im, (186, 2, 248, 16), t[6], 10, (110, 120, 120), (110, 120, 120), 0, solid=True)
+    retext(im, (2, 105, 62, 121), t[7], 10, (255, 205, 225), (255, 205, 225), 0, solid=True)
+    retext(im, (3, 172, 86, 186), t[8], 10, (140, 165, 235), (140, 165, 235), 0, maxw=76, solid=True)
+    retext(im, (3, 188, 86, 202), t[9], 10, (140, 165, 235), (140, 165, 235), 0, maxw=76, solid=True)
+    return im
+
+
+def infonames(im, text):
+    """information_font_name.txg: six name plates (rects as nm[] in InfoScene), romaji below stays."""
+    t = text.split('|')
+    rects = [(0, 0, 119, 32), (0, 64, 124, 96), (0, 32, 102, 64), (128, 0, 208, 32), (128, 32, 252, 64), (128, 64, 229, 96)]
+    for r, s in zip(rects, t):
+        cols = [px for px in im.crop(r).getdata() if px[3] > 200 and min(px[:3]) < 170]
+        from collections import Counter
+        col = Counter(cols).most_common(1)[0][0][:3] if cols else (60, 60, 60)
+        clear(im, r)
+        l = fit_label(s, 20, col, (255, 255, 255), 2, r[2] - r[0] - 2)
+        im.alpha_composite(l, (r[0] + (r[2] - r[0] - l.width) // 2, r[1] + (r[3] - r[1] - l.height) // 2))
+    return im
+
+
 def swizzle(px, wbytes, h):
     out = bytearray(len(px))
     src = 0
@@ -413,6 +470,12 @@ def main():
             im = saveparts(im, text)
         elif kind == 'savewindow':
             im = savewindow(im, text)
+        elif kind == 'friend':
+            im = friend(im, text)
+        elif kind == 'infoparts':
+            im = infoparts(im, text)
+        elif kind == 'infonames':
+            im = infonames(im, text)
         elif kind == 'simcard':
             im = simcard(im, text)
         elif kind == 'optiontext':

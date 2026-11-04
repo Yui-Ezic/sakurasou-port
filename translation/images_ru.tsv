@@ -93,3 +93,6 @@ action_parts_game.txg	gamebadge	Игра~лучше~UP|Шарм|Стабил.|Д
 backlog_parts.txg	backlog	Облачный выбор|Выбор
 saveload_parts.txg	saveparts	Канон|CG|Голос|Герои|FPS|Ритм|Нет
 saveload_window.txg	savewindow	Канон|CG|Голос|Герои|FPS|Ритм|Нет|Жанр/близость|Маршруты
+conversation_friend.txg	friend	Близость растёт!|Новый уровень близости!
+information_parts.txg	infoparts	Шарм|Объём|Стабил.|Драйв|Эмоции|Красота|Способности|Близость Lv|Здоровье|Мотивация
+information_font_name.txg	infonames	Масиро Сиина|Мисаки Камиигуса|Нанами Аояма|Дзин Митака|Рюноскэ Акасака|Отоха Накано
