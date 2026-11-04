@@ -87,3 +87,5 @@ menu_button.txg	menubutton	Спецификации|Задачи|Персона�
 action_choice_parts_on.txg	simchoice	Не выбрано|Спецификация|Встреча|Забота|Отдых|Масиро Сиина|Мисаки Камиигуса|Нанами Аояма|Дзин Митака|Рюноскэ Акасака|Отоха Накано
 action_choice_parts.txg	simcard	Мотив.|Здор.|Работа|Переживает!|Не может~работать!|Нет|д.
 common_font.txg	deadline	Ещё|дн.|Сдача концепта|Сдача альфы|Сдача беты|Сдача мастера
+calendar_parts.txg	calpills	Концепт|Альфа|Бета|Мастер|Итоги
+conversation_date.txg	convdate	пн|вт|ср|чт|пт|сб|вс

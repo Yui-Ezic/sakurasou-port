@@ -474,11 +474,22 @@ void AdvScene::drawDate() {
     if (fabs(a) > 0.05f) return;
     auto g = [&](int sx, int sy, int sw, float gx, Color c = {0, 0, 0, 255}) { sub(*texDate, {sx, sy, sw, 16}, x + gx - sw / 2.f, y + 24 - 8, (float)sw, 16, 1, c); };
     Color w{255, 255, 255, 255}; (void)w;
+    Color wc = (wd == 0 || hol) ? Color{255, 0, 0, 255} : wd == 6 ? Color{0, 0x50, 255, 255} : Color{0, 0, 0, 255};
+    if (trOn()) {   // "3.11 (пн)": day.month then weekday glyphs from conversation_date.txg (tl_images.py 'convdate')
+        float gx = 48 - ((d >= 10 ? 8 : 0) + 8 + 8 + (m >= 10 ? 8 : 0) + 8 + 6 + 8 + 16 + 8) / 2.f + 4;
+        auto adv = [&](int sx, int sy, int sw, float w, Color c = {0, 0, 0, 255}) { g(sx, sy, sw, gx + 4, c); gx += w; };
+        if (d >= 10) adv(96 + 16 * (d / 10), 16, 16, 8);
+        adv(96 + 16 * (d % 10), 16, 16, 8); adv(96, 0, 16, 8);
+        if (m >= 10) adv(96 + 16 * (m / 10), 16, 16, 8);
+        adv(96 + 16 * (m % 10), 16, 16, 14);
+        adv(128, 0, 8, 8); gx += 4;
+        adv(wd == 0 ? 240 : 144 + 16 * (wd - 1), 0, 16, 18, wc); adv(136, 0, 8, 8);
+        return;
+    }
     if (m >= 10) g(96 + 16 * (m / 10), 16, 16, 12);
     g(96 + 16 * (m % 10), 16, 16, 20); g(96, 0, 16, 32);
     if (d >= 10) g(96 + 16 * (d / 10), 16, 16, 44);
     g(96 + 16 * (d % 10), 16, 16, 52); g(112, 0, 16, 64); g(128, 0, 8, 74);
-    Color wc = (wd == 0 || hol) ? Color{255, 0, 0, 255} : wd == 6 ? Color{0, 0x50, 255, 255} : Color{0, 0, 0, 255};
     g(wd == 0 ? 240 : 144 + 16 * (wd - 1), 0, 16, 82, wc); g(136, 0, 8, 90);
 }
 void AdvScene::drawFriend() {

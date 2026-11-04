@@ -234,6 +234,42 @@ def deadline(im, text):
     return im
 
 
+def calpills(im, text):
+    """calendar_parts.txg: five tilted milestone tags in rects (x0,y0,x1,y1); redrawn whole at the original tilt."""
+    rects = [(0, 0, 88, 40), (88, 0, 160, 40), (160, 0, 232, 40), (0, 40, 104, 80), (104, 40, 176, 80)]
+    bodyw = [80, 62, 62, 92, 62]
+    orange = (255, 86, 20)
+    for (x0, y0, x1, y1), t, bw in zip(rects, text.split('|'), bodyw):
+        clear(im, (x0, y0, x1, y1))
+        k = 4
+        h = 22
+        pill = Image.new('RGBA', (bw * k, h * k), (0, 0, 0, 0))
+        d = ImageDraw.Draw(pill)
+        d.rounded_rectangle((0, 0, bw * k - 1, h * k - 1), 7 * k, fill=orange + (255,))
+        d.rounded_rectangle((2 * k, 2 * k, bw * k - 1 - 2 * k, h * k - 1 - 2 * k), 5 * k, fill=(255, 255, 255, 255))
+        pill = pill.resize((bw, h), Image.BOX)
+        l = fit_label(t, 11, orange, orange, 0, bw - 10)
+        pill.alpha_composite(l, ((bw - l.width) // 2, (h - l.height) // 2))
+        pill = pill.rotate(6.5, expand=True, resample=Image.BICUBIC)
+        im.alpha_composite(pill, (x0 + (x1 - x0 - pill.width) // 2, y0 + (y1 - y0 - pill.height) // 2))
+    return im
+
+
+def convdate(im, text):
+    """conversation_date.txg (256x128): '.' replaces 月 at (96,0); weekdays 16x16 at x=144+16*(wd-1), Sunday at x=240.
+    text = пн|вт|ср|чт|пт|сб|вс. White glyphs, tinted by the engine."""
+    names = text.split('|')
+    slots = [144 + 16 * i for i in range(6)] + [240]
+    for x0, t in zip(slots, names):
+        clear(im, (x0, 0, x0 + 16, 16))
+        l = fit_label(t, 12, (255, 255, 255), (255, 255, 255), 0, 16)
+        im.alpha_composite(l, (x0 + (16 - l.width) // 2, (16 - l.height) // 2))
+    clear(im, (96, 0, 112, 16))
+    d = ImageDraw.Draw(im)
+    d.rectangle((103, 12, 104, 13), fill=(0, 0, 0, 255))
+    return im
+
+
 def swizzle(px, wbytes, h):
     out = bytearray(len(px))
     src = 0
@@ -274,6 +310,10 @@ def main():
             im = simchoice(im, text)
         elif kind == 'deadline':
             im = deadline(im, text)
+        elif kind == 'calpills':
+            im = calpills(im, text)
+        elif kind == 'convdate':
+            im = convdate(im, text)
         elif kind == 'simcard':
             im = simcard(im, text)
         elif kind == 'optiontext':
