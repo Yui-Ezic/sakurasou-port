@@ -42,6 +42,9 @@ for s in scenes():
     done |= {k for k, r in load_ru(s).items() if r.get('st') != 'reject'}
 log = os.path.join(BUILD, 'untranslated.tsv')
 gaps, todo, seen = [], 0, set()
+if not os.path.exists(log):      # the engine creates the log on the first untranslated string
+    print('no untranslated string was shown: log is empty')
+    sys.exit(0)
 for l in open(log, encoding='utf8', errors='replace'):
     kind, _, jp = l.rstrip('\n').partition('\t')
     jp = jp.replace('\\n', '\n')

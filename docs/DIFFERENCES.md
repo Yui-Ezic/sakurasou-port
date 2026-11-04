@@ -33,3 +33,10 @@ Tested means run in this project. Nothing has been compared frame-by-frame with 
 
 ## Russian mode
 Only with `--tl`. Cyrillic text uses proportional spacing and word wrap instead of the original fixed 14 px cell, and up to 3 lines at a 15 px pitch. Long Russian title-menu labels use wider sprite cells. Japanese mode is unchanged. Status: `docs/TRANSLATION_PLAN.md`.
+
+## Russian pack (`--tl translation/build`)
+- All 27,425 strings are AI-drafted and AI-edited; no human has read them. Status of the pack is in `docs/TRANSLATION_PLAN.md`. The human play-through and review (phase 6) was skipped by decision, so expect errors.
+- 429 of 430 scripts complete with the pack, same as without; the exception is the same debug script `SCR_TGS_0000` (2026-11-04).
+- A button-sweep of 27 scenes (`tools/tl_coverage.py --run`, 900 frames each) shows no Japanese string without a translation. This is a sweep, not a playthrough: strings in rare states could still be missed.
+- 109 images are redrawn (see "Phase 5 result" in the plan). Not redrawn: title logo, company logos, the 69 in-story concept cards and game screenshots, mock-up thumbnails inside menus.
+- Not rerun in Russian: the six full-route bot runs.
