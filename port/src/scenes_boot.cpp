@@ -231,6 +231,10 @@ static void rawText(const char* s, float x, float y, Color c, bool left) {
     }
 }
 
+struct OptRects { Spr slow, fast, lo, hi, on, off, slash, only, all; };     // value labels in option_bg_text.txg
+const OptRects kOptJa = {{104,0,120,16},{120,0,136,16},{136,0,152,16},{152,0,168,16},{168,0,192,16},{192,0,216,16},{216,0,232,16},{128,16,176,32},{104,16,128,32}};
+const OptRects kOptRu = {{0,128,40,144},{44,128,84,144},{88,128,120,144},{124,128,160,144},{164,128,204,144},{208,128,248,144},{0,144,16,160},{0,160,48,176},{56,160,96,176}};   // tl_images.py 'optiontext'
+
 struct Option : Job {
     TexP bg, board, cursor, text; PageHeader hdr; int cur = 0; uint32_t v[9], saved[9]; int rows = trAvailable() ? 9 : 8; int exitSt = 0; int tick = 0, hl = 5, hld = 3;
     void pull(uint32_t* o) { o[0]=g_sys.textSpeed(); o[1]=g_sys.skipAll(); o[2]=g_sys.bgm(); o[3]=g_sys.se(); o[4]=g_sys.voice(); o[5]=g_sys.movie(); o[6]=g_sys.sorataVoice(); o[7]=g_sys.install(); o[8]=trRussian(); }
@@ -266,21 +270,22 @@ struct Option : Job {
         ui(*bg, {64, 0, 168, 64}, -120, 130); ui(*bg, {64, 0, 168, 64}, 120, 130, 1, -1, 1);
         hdr.draw();
         ui(*board, {0, 0, 456, 216}, 5, -2); ui(*board, {0, 216, 80, 256}, 175, -75);
+        const OptRects& R = trOn() && text->h > 128 ? kOptRu : kOptJa;   // the Russian atlas is taller
         for (int r = 0; r < 8; r++) ui(*text, {0, 16 * r, 104, 16 * r + 16}, -110, 74 - 21.f * r);
         ui(*cursor, {0, 0, 24, 24}, -170, 75 - 21.f * cur);
         ui(*cursor, {56, 0, 64, 20}, 5, 74 - 21.f * cur, hl / 255.f, 45, 1);
-        ui(*text, {104, 0, 120, 16}, -25, 74); ui(*text, {120, 0, 136, 16}, 165, 74);
+        ui(*text, R.slow, -25, 74); ui(*text, R.fast, 165, 74);
         for (uint32_t i = 0; i <= v[0]; i++) ui(*cursor, {24, 0, 56, 24}, 13 + 56.f * i, 74);
-        ui(*text, {128, 16, 176, 32}, 30, 53); ui(*text, {104, 16, 128, 32}, 100, 53); ui(*text, {216, 0, 232, 16}, 65, 52);
+        ui(*text, R.only, 30, 53); ui(*text, R.all, 100, 53); ui(*text, R.slash, 65, 52);
         ui(*cursor, {0, 24, 56, 48}, v[1] == 0 ? 30 : 100, 53);
         const float ys[4] = {32, 11, -10, -31};
         for (int k = 0; k < 4; k++) {
-            ui(*text, {136, 0, 152, 16}, -25, ys[k]); ui(*text, {152, 0, 168, 16}, 165, ys[k]);
+            ui(*text, R.lo, -25, ys[k]); ui(*text, R.hi, 165, ys[k]);
             for (uint32_t i = 0; i < v[2 + k]; i++) ui(*cursor, {24, 0, 56, 24}, -1 + 28.f * (i + 1), ys[k]);
         }
         for (int k = 0; k < 2; k++) {
             float y = k ? -73.f : -52.f;
-            ui(*text, {168, 0, 192, 16}, 30, y); ui(*text, {192, 0, 216, 16}, 100, y); ui(*text, {216, 0, 232, 16}, 65, y - 1);
+            ui(*text, R.on, 30, y); ui(*text, R.off, 100, y); ui(*text, R.slash, 65, y - 1);
             ui(*cursor, {0, 24, 56, 48}, v[6 + k] ? 30 : 100, y);
         }
         if (rows == 9) {      // language row: plain text, no art. Names stay in their own script and bypass tr().

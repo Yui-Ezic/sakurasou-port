@@ -17,7 +17,7 @@ Plan and results: `docs/TRANSLATION_PLAN.md`. Files here hold no Japanese, only 
 
 ## Draft a scene with AI
 
-    python3 tools/tl_draft.py --model opus SCN_MAIN_1Y_1112__020
+    python3 tools/tl_draft.py SCN_MAIN_1Y_1112__020      # default: --model auto --effort low (see route() in tl_draft.py)
 
 Existing lines are kept unless `--force`. Usage is logged to `work/tl/usage.jsonl`.
 
