@@ -1,6 +1,6 @@
 # Russian translation plan
 
-Status 2026-11-03: phases 1-4 done. All 27,431 strings are drafted (status `draft`). The AI edit pass read all 414 scenes ($14.50) and proposed changes; 879 were applied (`by=edit`), 1 skipped. The pack builds with 0 errors and 1,347 warnings (mostly glossary-stem false positives). Phase 5 (art) started: all 20 remaining page headers and all 49 location plates are redrawn (83 images in `images_ru.tsv`); two pilot plate texts were wrong and are fixed (`LC_SKG` is the garden, `LC_SKWR` is Masiro's room). Still to do: sprite atlases and logos, see below.
+Status 2026-11-03: phases 1-4 done. All 27,431 strings are drafted (status `draft`). The AI edit pass read all 414 scenes ($14.50) and proposed changes; 879 were applied (`by=edit`), 1 skipped. The pack builds with 0 errors and 1,347 warnings (mostly glossary-stem false positives). Phase 5 (art) is done except the decorative cards listed at the end (109 images in `images_ru.tsv`). Phases 6 and 7 are next.
 
 Decisions by Misha, 2026-11-02:
 - Names: Polivanov system (Масиро Сиина, Дзин, -сэмпай).
@@ -131,14 +131,35 @@ F8 and F5 are the core of review. Both show an on-screen confirmation, and Misha
 - Licences: redrawn art contains original artwork, so it may need rebuilding from the player's ISO at install time, which
   `tl_images.py` already does in principle. The art font must allow embedding and redistribution.
 
-## Phase 5 remaining (survey 2026-11-03)
+## Phase 5 result (2026-11-04)
 
-Done: page headers and location plates (type `page`, `loc`). Still Japanese, each needs its own layout work in `tl_images.py`
-because the engine cuts them out by fixed coordinates:
-- Done: `menu_button.txg` (kind `menubutton`: eight tile headers and the rotated システム label) and `option_bg_text.txg` (kind `optiontext`: a taller 256x176 atlas; `kOptRu` in `scenes_boot.cpp` holds its cut-out rectangles and is used when Russian is on and the atlas is the taller one). `common_page.txg` is not used by the port.
-- `menu_img.txg` captions, `menu_button` DLC tile at (288,176).
-- Done: calendar milestone tags (`calendar_parts.txg`, kind `calpills`: Концепт/Альфа/Бета/Мастер/Итоги) and the in-story date ribbon (`conversation_date.txg`, kind `convdate`; `AdvScene::drawDate` draws «12.11 (пн)» when `trOn()`). The calendar screen itself already used text. Still open: `common_calendar`, `information_font*`.
-- Name atlases: `omake_event_name`, `omake_pose_name`, `omake_voice_ch_name`, `omake_menu_name`, `task_name`, `information_font_name`, `title_copyright` is Latin already.
-- Done: `action_choice_parts.txg` and `_on.txg` (kinds `simcard`, `simchoice`: mode buttons, captions, six names, мотив./здоровье tiles, warning banners, working pill, day suffix). - Done: the deadline widget (`common_font.txg`, kind `deadline`): あと/日 replaced in place, four Russian lines (концепт/альфа/бета/мастер) in the atlas's free area y=96..128; `DeadlineWidget::draw` uses them when `trOn()` (not by atlas height: a taller atlas would break the fractional UVs).
-- Parts with short labels: `action_parts_game`, `information_parts`, `saveload_window`, `contest_*`, `dlc_*`, `conversation_friend` (親密度アップ), `backlog_parts`, `note_bg`.
-- Logos: `logo_dontcopy` (legal notice), `title_logo` and `title_trial` (kept Japanese by decision). `logo_*` company logos stay.
+`images_ru.tsv` now drives 109 files; `tools/tl_images.py` has one function per kind (the TSV holds only the Russian text,
+the geometry lives in the script). Pages, plates and menus were done earlier. Added in this pass, all checked in a
+headless render or in-game:
+
+- Simulation: action choice (`simchoice`, `simcard`), deadline widget (`deadline`), calendar tags (`calpills`), story date
+  ribbon (`convdate`, drawn as «12.11 (пн)» by `AdvScene::drawDate`), game-quality badge and stat chips (`gamebadge`),
+  spec-square state pills (`squareparts`), the absent plate (`actionwin`).
+- Menus: stat chips round the status hexagon (`psrts`), character info parts and name plates (`infoparts`, `infonames`),
+  save/load genre tags and headings (`saveparts`, `savewindow`), backlog choice tags (`backlog`), DLC menu (`dlc`, plus a
+  tenth entry in `menubutton`), contest ranking banner (`rankfont`).
+- Story: friendship-up banner (`friend`).
+- Name lists of the extras (`rowlist`: menu, event, pose, voice). The voice actors' kanji names are left as they are: the
+  port never draws that column.
+- Legal notice (`legal`), written as a plain TXG under the `.txgtl` name (the loader goes by magic).
+
+Engine changes were needed only where the Russian text has a different order or length: the story date and the deadline
+widget. Everything else replaces pixels in place, so Japanese mode is untouched (art is off there).
+
+Deliberately left Japanese:
+- Title logo and `title_trial`, by decision. `logo_*` company logos.
+- `img_plan_01` (69 concept cards of in-story games with painted titles), `img_alpha_*` and `img_beta_*` screenshots,
+  `menu_img` thumbnails, and the tiny mock-up screens inside `menu_button` and `omake_menu_img`: decorative, each card
+  would be hand art. If wanted, they are the next art task.
+- Atlases the port never loads (`common_calendar`, `common_help_parts`, `task_name`, `task_psrts`, `note_bg`,
+  `information_font`) and the CV column of `omake_voice_ch_name`.
+
+Quality notes: small lettering in the narrowest tags (`Повседн.`, `Стабил.`) is cramped; a few stray outline pixels remain
+under some captions. Judge them by playing.
+
+Phases 6 and 7 (human play-through, bot run of all six routes in Russian, update `docs/DIFFERENCES.md`) are not started.
