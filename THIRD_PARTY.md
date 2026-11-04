@@ -13,3 +13,6 @@ This project is licensed under the GNU General Public License v3.0 or later (see
 "Sakurasou no Pet na Kanojo" and all of its art, music, voices, scripts and text belong to their respective owners. None of it is included in this repository or in the releases; the program reads it from the player's own PSP disc image.
 
 The Russian translation (`translation/`) is original text and is covered by this project's licence. It contains no Japanese source text.
+
+## Redrawn Russian art
+`translation/release/assets/` holds menu and title images redrawn with Russian text. They are derived from the game's original artwork (© its owners) and are provided as part of the unofficial translation; the lettering uses the Adwaita Sans font (SIL Open Font License). If you are a rights holder and want them removed, open an issue.
