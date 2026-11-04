@@ -25,18 +25,95 @@ static std::string exeDir() {
     return d;
 }
 
-static std::string findIso(const char* argv0) {
+static std::string u8(const std::filesystem::path& p) { auto u = p.u8string(); return std::string(u.begin(), u.end()); }
+static std::string lower(std::string s) { std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return (char)tolower(c); }); return s; }
+static bool isIsoName(const std::string& s) { return s.size() > 4 && lower(s.substr(s.size() - 4)) == ".iso"; }
+
+// Where the chosen ISO is remembered, so the player only ever has to point at it once.
+static std::string savedIsoFile() {
+    char* b = SDL_GetPrefPath("Sakurasou", "SakurasouPort");
+    std::string d = b ? b : "";
+    SDL_free(b);
+    return d.empty() ? "" : d + "iso_path.txt";
+}
+static std::string loadSavedIso() {
+    std::string f = savedIsoFile(), p;
+    if (FILE* fp = f.empty() ? nullptr : fopen(f.c_str(), "rb")) {
+        char buf[4096] = {}; size_t n = fread(buf, 1, sizeof buf - 1, fp); fclose(fp);
+        p.assign(buf, n);
+        while (!p.empty() && (p.back() == '\n' || p.back() == '\r')) p.pop_back();
+    }
+    std::error_code ec;
+    return !p.empty() && std::filesystem::exists(std::filesystem::path(p), ec) ? p : "";
+}
+static void saveIso(const std::string& iso) {
+    std::error_code ec;
+    std::string f = savedIsoFile();
+    if (f.empty()) return;
+    std::string abs = u8(std::filesystem::absolute(std::filesystem::path(iso), ec));
+    if (FILE* fp = fopen(f.c_str(), "wb")) { fputs(abs.c_str(), fp); fclose(fp); }
+}
+
+// Candidate ISO files, best first: the remembered one, well-known names, then any .iso next to the program or in the
+// current folder (players keep their own file name).
+static std::vector<std::string> isoCandidates() {
+    std::vector<std::string> out;
+    auto add = [&](const std::string& p) { if (!p.empty() && std::find(out.begin(), out.end(), p) == out.end()) out.push_back(p); };
+    std::error_code ec;
+    add(loadSavedIso());
     std::string base = exeDir();
     for (auto p : {"sakuraso-no-pet-na-kanojo-psp.iso", "../sakuraso-no-pet-na-kanojo-psp.iso", "../../sakuraso-no-pet-na-kanojo-psp.iso", "game.iso"}) {
-        if (std::filesystem::exists(p)) return p;
-        if (!base.empty() && std::filesystem::exists(base + p)) return base + p;
+        if (std::filesystem::exists(p, ec)) add(p);
+        if (!base.empty() && std::filesystem::exists(base + p, ec)) add(base + p);
     }
-    // Any single .iso next to the executable (players often keep their own file name).
-    std::error_code ec;
-    if (!base.empty())
-        for (auto& e : std::filesystem::directory_iterator(base, ec))
-            if (e.is_regular_file() && e.path().extension() == ".iso") { auto u = e.path().u8string(); return std::string(u.begin(), u.end()); }
-    return "";
+    for (std::string dir : {base, std::string(".")}) {
+        if (dir.empty()) continue;
+        for (auto& e : std::filesystem::directory_iterator(dir, ec))
+            if (e.is_regular_file(ec) && isIsoName(u8(e.path()))) add(u8(e.path()));
+    }
+    return out;
+}
+
+// Nothing usable found: explain, then wait with a small window where the ISO can be dropped.
+// Returns the dropped path, or "" if the player quit.
+static std::string askForIso(const std::string& problem) {
+    std::string msg = "To play, Sakurasou needs your own copy of the game: the PSP image of\n"
+                      "\"Sakurasou no Pet na Kanojo\" (an .iso file). It is not included.\n\n";
+    if (!problem.empty()) msg += problem + "\n\n";
+    msg += "Next, drag the .iso file onto the window that opens.\n"
+           "You can also copy it into the same folder as this program and start again.\n"
+           "It is remembered afterwards.";
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0) { fprintf(stderr, "%s\n", msg.c_str()); return ""; }
+    SDL_MessageBoxButtonData btn[2] = {{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Choose the file"},
+                                       {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Quit"}};
+    SDL_MessageBoxData box = {SDL_MESSAGEBOX_INFORMATION, nullptr, "Sakurasou - game image needed", msg.c_str(), 2, btn, nullptr};
+    int hit = 0;
+    if (SDL_ShowMessageBox(&box, &hit) < 0) { fprintf(stderr, "%s\n", msg.c_str()); return ""; }
+    if (hit != 1) return "";
+    SDL_Window* w = SDL_CreateWindow("Drag your game .iso file into this window (Esc to quit)", SDL_WINDOWPOS_CENTERED,
+                                     SDL_WINDOWPOS_CENTERED, 640, 360, 0);
+    if (!w) return "";
+    SDL_Renderer* r = SDL_CreateRenderer(w, -1, 0);
+    std::string got;
+    bool done = false;
+    SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+    while (!done) {
+        SDL_Event e;
+        while (SDL_WaitEventTimeout(&e, 100)) {
+            if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE)) done = true;
+            if (e.type == SDL_DROPFILE) { got = e.drop.file; SDL_free(e.drop.file); done = true; break; }
+        }
+        if (r) {   // a plain dashed "drop zone"
+            SDL_SetRenderDrawColor(r, 34, 28, 44, 255); SDL_RenderClear(r);
+            SDL_SetRenderDrawColor(r, 255, 160, 190, 255);
+            for (int x = 30; x < 610; x += 24) { SDL_Rect a{x, 30, 14, 4}, b{x, 326, 14, 4}; SDL_RenderFillRect(r, &a); SDL_RenderFillRect(r, &b); }
+            for (int y = 30; y < 330; y += 24) { SDL_Rect a{30, y, 4, 14}, b{606, y, 4, 14}; SDL_RenderFillRect(r, &a); SDL_RenderFillRect(r, &b); }
+            SDL_RenderPresent(r);
+        }
+    }
+    if (r) SDL_DestroyRenderer(r);
+    SDL_DestroyWindow(w);
+    return got;
 }
 
 // A release folder ships the translation as "translation/ru.pack" next to the executable.
@@ -204,11 +281,23 @@ int main(int argc, char** argv) {
     std::string iso;
     std::vector<std::string> args(argv + 1, argv + argc);
     for (size_t i = 0; i + 1 < args.size(); i++) if (args[i] == "--iso") iso = args[i + 1];
-    if (iso.empty()) iso = findIso(argv[0]);
-    if (iso.empty() || !g_fs.mount(iso)) {
-        fatal("Cannot open the game image (" + iso + "). Put the PSP ISO next to the executable or use --iso <path>. " + g_fs.error);
-        return 2;
+    if (iso.empty())   // an .iso dragged onto the executable arrives as an argument
+        for (auto& a : args) if (a[0] != '-' && isIsoName(a)) { iso = a; break; }
+    bool mounted = false;
+    std::string problem;
+    if (!iso.empty()) {
+        mounted = g_fs.mount(iso);
+        if (!mounted) problem = "Cannot use \"" + iso + "\": " + g_fs.error + ".";
+    } else {
+        for (auto& c : isoCandidates()) if ((mounted = g_fs.mount(c))) { iso = c; break; }
     }
+    while (!mounted) {
+        iso = askForIso(problem);
+        if (iso.empty()) return 2;
+        mounted = g_fs.mount(iso);
+        problem = mounted ? "" : "That file is not the PSP game image (" + g_fs.error + "). Please pick the .iso of \"Sakurasou no Pet na Kanojo\".";
+    }
+    saveIso(iso);
     bool tlGiven = false;
     for (size_t i = 0; i + 1 < args.size(); i++) if (args[i] == "--tl") {
         tlGiven = true;

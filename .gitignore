@@ -8,6 +8,8 @@ ghidra/
 port/build/
 port/build-win/
 port/build-con/
+port/build-linux/
+port/build-linux-deps/
 dist/
 __pycache__/
 *.pyc

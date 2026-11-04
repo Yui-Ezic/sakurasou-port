@@ -174,13 +174,14 @@ static bool isoFind(FILE* f, const char* path, uint64_t& off, uint64_t& size) {
 }
 
 bool AssetFS::mount(const std::string& path) {
+    if (fp) { fclose(fp); fp = nullptr; }
     fp = fopen(path.c_str(), "rb");
-    if (!fp) { error = "cannot open " + path; return false; }
+    if (!fp) { error = "cannot open the file"; return false; }
     uint64_t o1, o2, s;
     if (!isoFind(fp, "PSP_GAME/USRDIR/DATA.CPK", o1, s) || !isoFind(fp, "PSP_GAME/USRDIR/STRM.CPK", o2, s)) {
-        error = "not the expected game image"; return false;
+        error = "not the expected game image"; fclose(fp); fp = nullptr; return false;
     }
-    if (!data.open(fp, o1) || !strm.open(fp, o2)) { error = "bad CPK"; return false; }
+    if (!data.open(fp, o1) || !strm.open(fp, o2)) { error = "bad CPK"; fclose(fp); fp = nullptr; return false; }
     return true;
 }
 static bool readFile(const std::string& p, Bytes& out) {

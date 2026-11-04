@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Builds translation/build/ru.pack from translation/ru/*.jsonl and prints the automatic check report.
 Rejected lines stay out of the pack, so the game shows the Japanese there."""
-import glob, json, os, sys
+import glob, json, os, shutil, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tl_common import *
 
@@ -36,6 +36,9 @@ def build(report=True):
         for k in sorted(pack):
             f.write(f'{k}\t{pack[k]}\n')
     os.replace(tmp, os.path.join(BUILD, 'ru.pack'))
+    rel = os.path.join(os.path.dirname(BUILD), 'release')       # tracked copy: releases are built from it, without the ISO
+    os.makedirs(rel, exist_ok=True)
+    shutil.copyfile(os.path.join(BUILD, 'ru.pack'), os.path.join(rel, 'ru.pack'))
     if report:
         print(f'{len(pack)} строк в пакете из {total}; статусы: {by_status}; ошибок {len(errs)}, предупреждений {len(warns)}')
         for s, k, m, ru in errs[:40]:
