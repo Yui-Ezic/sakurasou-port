@@ -1,6 +1,6 @@
 # Russian translation plan
 
-Status 2026-11-02: phase 1 done (see below). Phase 2 proposals written; waiting for the glossary and speech sheets to be approved. Drafting has not started.
+Status 2026-11-03: phases 1-4 done. All 27,431 strings are drafted (status `draft`). The AI edit pass read all 414 scenes ($14.50) and proposed changes; 879 were applied (`by=edit`), 1 skipped. The pack builds with 0 errors and 1,347 warnings (mostly glossary-stem false positives). Phase 5 (art) started: all 20 remaining page headers and all 49 location plates are redrawn (83 images in `images_ru.tsv`); two pilot plate texts were wrong and are fixed (`LC_SKG` is the garden, `LC_SKWR` is Masiro's room). Still to do: sprite atlases and logos, see below.
 
 Decisions by Misha, 2026-11-02:
 - Names: Polivanov system (Масиро Сиина, Дзин, -сэмпай).
@@ -130,3 +130,15 @@ F8 and F5 are the core of review. Both show an on-screen confirmation, and Misha
 - Public release: with no full human read, errors will reach players. Consider calling the first release a beta.
 - Licences: redrawn art contains original artwork, so it may need rebuilding from the player's ISO at install time, which
   `tl_images.py` already does in principle. The art font must allow embedding and redistribution.
+
+## Phase 5 remaining (survey 2026-11-03)
+
+Done: page headers and location plates (type `page`, `loc`). Still Japanese, each needs its own layout work in `tl_images.py`
+because the engine cuts them out by fixed coordinates:
+- Done: `menu_button.txg` (kind `menubutton`: eight tile headers and the rotated システム label) and `option_bg_text.txg` (kind `optiontext`: a taller 256x176 atlas; `kOptRu` in `scenes_boot.cpp` holds its cut-out rectangles and is used when Russian is on and the atlas is the taller one). `common_page.txg` is not used by the port.
+- `menu_img.txg` captions, `menu_button` DLC tile at (288,176).
+- Calendar and number fonts with kanji (`calendar_font*`, `common_calendar`, `conversation_date`, `information_font*`): weekdays, 月/日, 企画書/α版/β版 labels.
+- Name atlases: `omake_event_name`, `omake_pose_name`, `omake_voice_ch_name`, `omake_menu_name`, `task_name`, `information_font_name`, `title_copyright` is Latin already.
+- Done: `action_choice_parts.txg` and `_on.txg` (kinds `simcard`, `simchoice`: mode buttons, captions, six names, мотив./здоровье tiles, warning banners, working pill, day suffix). Still open on that screen: the deadline widget (企画書提出まで / あと / 日), probably in `information_parts` or `common_calendar`.
+- Parts with short labels: `action_parts_game`, `information_parts`, `saveload_window`, `contest_*`, `dlc_*`, `conversation_friend` (親密度アップ), `backlog_parts`, `note_bg`.
+- Logos: `logo_dontcopy` (legal notice), `title_logo` and `title_trial` (kept Japanese by decision). `logo_*` company logos stay.

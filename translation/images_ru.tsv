@@ -9,7 +9,80 @@ common_page_backlog.txg	page	История
 common_page_tips.txg	page	Справка
 common_page_calendar.txg	page	Календарь
 common_page_task.txg	page	Задачи
-LC_SKG.loc	loc	Сакурасо, ворота
+LC_SKG.loc	loc	Сакурасо, сад
 LC_SIO.loc	loc	Школа Суймэй
-LC_SKWR.loc	loc	Сакурасо, комната Сораты
+LC_SKWR.loc	loc	Сакурасо, комната Масиро
 LC_SIG.loc	loc	Школа Суймэй, ворота
+common_page_action1.txg	page	Ход 1: в работе
+common_page_action2.txg	page	Ход 2: в работе
+common_page_action3.txg	page	Ход 3: в работе
+common_page_action_choice.txg	page	Выбор действия
+common_page_dlc.txg	page	Дополнения
+common_page_dlc_load01.txg	page	Серия 1: загрузка
+common_page_dlc_load02.txg	page	Серия 2: загрузка
+common_page_dlc_load03.txg	page	Серия 3: загрузка
+common_page_dlc_load04.txg	page	Серия 4: загрузка
+common_page_dlc_save01.txg	page	Серия 1: сохранение
+common_page_dlc_save02.txg	page	Серия 2: сохранение
+common_page_dlc_save03.txg	page	Серия 3: сохранение
+common_page_dlc_save04.txg	page	Серия 4: сохранение
+common_page_info.txg	page	Персонажи
+common_page_omake_evcg.txg	page	Иллюстрации
+common_page_omake_friend.txg	page	События героев
+common_page_omake_menu.txg	page	Бонусы
+common_page_omake_standup.txg	page	Спрайты
+common_page_omake_voice.txg	page	Озвучка
+common_page_quick_load.txg	page	Быстрая загрузка
+common_page_square.txg	page	Квадрат спецификаций
+LC_BITN.loc	loc	Семейное кафе
+LC_DUMMY.loc	loc	★ Не задано ★
+LC_FJCHU.loc	loc	Склон горы Фудзи
+LC_FJSAN.loc	loc	Вершина Фудзи
+LC_JMEM.loc	loc	Станция «Гэйдаймаэ»
+LC_JMST.loc	loc	Торговая улица Акарэнга
+LC_JNJH.loc	loc	Храм
+LC_JNJY.loc	loc	Храм
+LC_JSB.loc	loc	Церемония SCE, сцена
+LC_JSD.loc	loc	Церемония SCE, помост
+LC_JSL.loc	loc	Церемония SCE, холл
+LC_JSLA.loc	loc	Церемония SCE, у входа
+LC_JSO.loc	loc	Церемония SCE
+LC_JST.loc	loc	Церемония SCE, столы
+LC_MJN.loc	loc	Необитаемый остров
+LC_OSK.loc	loc	Деловой квартал Осаки
+LC_PARK.loc	loc	Парк
+LC_REST.loc	loc	Кафе
+LC_SENT.loc	loc	Баня
+LC_SIBUY.loc	loc	Школа Суймэй, магазин
+LC_SICLB.loc	loc	Школа Суймэй, художественный класс
+LC_SICLF.loc	loc	Школа Суймэй, класс
+LC_SICO.loc	loc	Школа Суймэй, лестница
+LC_SICOF.loc	loc	Школа Суймэй, коридор
+LC_SIREC.loc	loc	Универ Суймэй, студия
+LC_SK1.loc	loc	Сакурасо, коридор 1-го этажа
+LC_SK2.loc	loc	Сакурасо, коридор 2-го этажа
+LC_SKB.loc	loc	Сакурасо, ванная
+LC_SKD.loc	loc	Сакурасо, столовая
+LC_SKDR.loc	loc	Сакурасо, умывальная
+LC_SKEB.loc	loc	Сакурасо, прихожая
+LC_SKEF.loc	loc	Сакурасо, прихожая
+LC_SKEO.loc	loc	Сакурасо, у входа
+LC_SKJR.loc	loc	Сакурасо, комната Дзина
+LC_SKMR.loc	loc	Сакурасо, комната Мисаки
+LC_SKNR.loc	loc	Сакурасо, комната Нанами
+LC_SKO.loc	loc	Сакурасо
+LC_SKRR.loc	loc	Сакурасо, комната Рюноскэ
+LC_SKSR.loc	loc	Сакурасо, комната Сораты
+LC_SKWA.loc	loc	Дорога в школу
+LC_SKWB.loc	loc	Дорога в школу
+LC_SMEK.loc	loc	Станция «Симо-Минамидзава»
+LC_SMMC.loc	loc	Торговый квартал Симо-Минамидзавы
+LC_SMZ.loc	loc	Магазин мелочей
+LC_SPB.loc	loc	Торговый центр, книжный
+LC_SPJ.loc	loc	Торговый центр, ювелирный
+LC_SPM.loc	loc	Торговый центр
+lc_test.loc	loc	Сакурасо, коридор
+option_bg_text.txg	optiontext	-
+menu_button.txg	menubutton	Спецификации|Задачи|Персонажи|Справка|Сохранение|Загрузка|Настройки|На титул|Система
+action_choice_parts_on.txg	simchoice	Не выбрано|Спецификация|Встреча|Забота|Отдых|Масиро Сиина|Мисаки Камиигуса|Нанами Аояма|Дзин Митака|Рюноскэ Акасака|Отоха Накано
+action_choice_parts.txg	simcard	Мотив.|Здор.|Работа|Переживает!|Не может~работать!|Нет|д.
