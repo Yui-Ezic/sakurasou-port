@@ -8,8 +8,19 @@ from tl_common import *
 from tl_ai import ask
 
 BATCH = 120
+EFFORT = None      # --effort low|medium|high: thinking budget of the claude CLI
 SCHEMA = {'type': 'object', 'required': ['lines'], 'properties': {'lines': {'type': 'array', 'items': {
     'type': 'object', 'required': ['k', 'ru'], 'properties': {'k': {'type': 'string'}, 'ru': {'type': 'string'}}}}}}
+
+
+# --model auto: Opus where character voice carries the text (main story, heroine routes, character events),
+# Sonnet for formulaic or low-stakes text. Both at --effort low unless told otherwise. Tune after reviewing samples.
+SONNET_SCENES = {'TUTORIAL', 'RANK', 'BMSR', 'BNNM', 'BMSK', 'BOTH', 'BRTA', 'BCHI', 'BMYH', '_tables', '_ui', '_names'}
+
+
+def route(scene):
+    key = scene if scene.startswith('_') else scene.split('_')[1]
+    return 'sonnet' if key in SONNET_SCENES else 'opus'
 
 
 def glossary_notes():
@@ -78,7 +89,7 @@ def item(e):
 
 
 def call(model, system, prompt):
-    so, cost = ask(model, system, prompt, SCHEMA)
+    so, cost = ask(model, system, prompt, SCHEMA, effort=EFFORT)
     return so['lines'], cost
 
 
@@ -121,9 +132,11 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('scenes', nargs='*')
     ap.add_argument('--all', action='store_true', help='every scene in reading order: common route, heroine routes, events, names, interface, tables')
-    ap.add_argument('--model', default='sonnet')
+    ap.add_argument('--model', default='auto', help='opus, sonnet, or auto (routes by scene type)')
+    ap.add_argument('--effort', choices=['low', 'medium', 'high', 'xhigh', 'max'], help='thinking effort; low saves most tokens')
     ap.add_argument('--force', action='store_true')
     a = ap.parse_args()
+    EFFORT = a.effort or 'low'
     font, gloss = Font(), load_glossary()
     todo = a.scenes
     if a.all:
@@ -134,7 +147,7 @@ if __name__ == '__main__':
     total = 0
     for s in todo:
         try:
-            n, c = draft(s, a.model, a.force, font, gloss)
+            n, c = draft(s, route(s) if a.model == 'auto' else a.model, a.force, font, gloss)
         except (Exception, SystemExit) as ex:       # one failed call must not stop an overnight run; rerun resumes
             print(f'{s}: FAILED {ex}', flush=True)
             continue

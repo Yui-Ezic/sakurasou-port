@@ -4,15 +4,17 @@ import datetime, json, os, re, subprocess, tempfile
 from tl_common import ROOT
 
 
-def ask(model, system, prompt, schema, timeout=1500):
+def ask(model, system, prompt, schema, timeout=1500, effort=None):
     """Returns (structured output, cost in USD). Usage is appended to work/tl/usage.jsonl."""
     with tempfile.TemporaryDirectory() as d:
         sp = os.path.join(d, 'system.md')
         open(sp, 'w', encoding='utf8').write(system)
         r = subprocess.run(['claude', '-p', '--model', model, '--output-format', 'json', '--tools', '',
                             '--system-prompt-file', sp, '--setting-sources', '', '--no-session-persistence',
+                            *(['--effort', effort] if effort else []),
                             '--json-schema', json.dumps(schema)],
-                           input=prompt, capture_output=True, text=True, cwd=d, timeout=timeout)
+                           input=prompt, capture_output=True, text=True, cwd=d, timeout=timeout,
+                           env={**os.environ, **({'MAX_THINKING_TOKENS': '0'} if os.environ.get('TL_NOTHINK') else {})})
     if r.returncode:
         raise SystemExit(f'claude failed: {r.stdout[:400]} {r.stderr[:400]}')
     o = json.loads(r.stdout)

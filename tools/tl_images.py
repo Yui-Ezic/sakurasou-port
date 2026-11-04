@@ -270,6 +270,97 @@ def convdate(im, text):
     return im
 
 
+def mode_color(im, box):
+    """Most common opaque colour in a rect: the flat background behind lettering."""
+    from collections import Counter
+    c = Counter(px for px in im.crop(box).getdata() if px[3] > 200)
+    return c.most_common(1)[0][0] if c else (255, 255, 255, 255)
+
+
+def erase(im, box, col=None):
+    """Repaints only the opaque pixels of a rect with the flat background colour, so a shaped plate keeps its outline."""
+    col = col or mode_color(im, box)
+    px = im.load()
+    for y in range(box[1], box[3]):
+        for x in range(box[0], box[2]):
+            if px[x, y][3] > 0:
+                px[x, y] = col[:3] + (px[x, y][3],)
+    return col
+
+
+def retext(im, box, text, size, fill, outline=None, spread=1, col=None, maxw=None):
+    """Erases the lettering in box, then centres new lettering there."""
+    bg = erase(im, box, col)
+    if outline is None:
+        outline = tuple(int(v * 0.5) for v in bg[:3])
+    l = fit_label(text, size, fill, outline, spread, maxw or (box[2] - box[0]))
+    im.alpha_composite(l, (box[0] + (box[2] - box[0] - l.width) // 2, box[1] + (box[3] - box[1] - l.height) // 2))
+    return bg
+
+
+def gamebadge(im, text):
+    """action_parts_game.txg: hexagon 'ゲーム完成度UP' (0,0,48,54) and six 40x16 stat chips (see Toast::drawAt)."""
+    t = text.split('|')
+    cream = (255, 253, 215, 255)
+    fill(im, (5, 11, 43, 44), cream)
+    lines = t[0].split('~')
+    ls = [fit_label(x, 10, (255, 110, 20), (255, 110, 20), 0, 34) for x in lines]
+    ls[-1] = fit_label(lines[-1], 16, (255, 110, 20), (255, 110, 20), 0, 34)
+    tot = sum(l.height for l in ls) - 2 * (len(ls) - 1)
+    y = 27 - tot // 2
+    for l in ls:
+        im.alpha_composite(l, (24 - l.width // 2, y)); y += l.height - 2
+    # chips: (x, y, tint) in the order of the labels in t[1:]
+    chips = [(88, 0, (235, 235, 100)), (88, 16, (150, 185, 190)), (48, 16, (120, 200, 230)),
+             (48, 32, (230, 170, 90)), (88, 32, (220, 120, 120)), (48, 0, (200, 150, 230))]
+    for (x0, y0, tint), name in zip(chips, t[1:7]):
+        clear(im, (x0, y0, x0 + 40, y0 + 16))
+        k = 4
+        bar = Image.new('RGBA', (40 * k, 14 * k), (0, 0, 0, 0))
+        px = bar.load()
+        for x in range(40 * k):
+            e = min(x, 40 * k - 1 - x) / (7.0 * k)
+            a = int(255 * min(1.0, 0.25 + 0.75 * e))
+            for y in range(14 * k):
+                px[x, y] = tint + (a,)
+        bar = bar.resize((40, 14), Image.BOX)
+        im.alpha_composite(bar, (x0, y0 + 1))
+        l = fit_label(name, 10, (70, 70, 70), (255, 255, 255), 1, 38)
+        im.alpha_composite(l, (x0 + (40 - l.width) // 2, y0 + (16 - l.height) // 2))
+    return im
+
+
+def backlog(im, text):
+    """backlog_parts.txg: 'クラウド選択肢' (0,24,88,40) and '選択肢' (0,40,48,56) pills."""
+    t = text.split('|')
+    for (x0, y0, x1, y1), s in (((0, 24, 88, 40), t[0]), ((0, 40, 48, 56), t[1])):
+        retext(im, (x0 + 4, y0 + 2, x1 - 4, y1 - 2), s, 10, (255, 255, 255), (255, 255, 255), 0, maxw=x1 - x0 - 12)
+    return im
+
+
+def saveparts(im, text):
+    """saveload_parts.txg genre pills (rows of 16 at y=120.., text x 14..46) and saveload_window.txg tiles/headings.
+    text = Канон|CG|Голос|Герои|FPS|Ритм|Нет|Жанр/близость|Маршруты (genre order: 王道 CG ボイス キャラ FPS リズム 未定)"""
+    t = text.split('|')
+    for i in range(7):
+        y0 = 120 + 16 * i
+        retext(im, (16, y0 + 2, 46, y0 + 14), t[i], 9, (255, 255, 255), None, 1, col=mode_color(im, (44, y0 + 3, 47, y0 + 9)))
+    return im
+
+
+def savewindow(im, text):
+    t = text.split('|')
+    tiles = [(0, 72), (0, 112), (0, 152), (48, 72), (48, 112), (48, 152), (0, 192)]   # 王道 CG ボイス キャラ FPS リズム 未定
+    for (x0, y0), s in zip(tiles, t[:7]):
+        retext(im, (x0 + 1, y0 + 2, x0 + 43, y0 + 15), s, 10, (255, 255, 255), None, 1)
+    blue = (125, 190, 205)
+    for (x0, x1), s in (((0, 80), t[7]), ((80, 208), t[8])):
+        clear(im, (x0, 0, x1, 14))
+        l = fit_label(s, 9, blue, blue, 0, x1 - x0 - 6)
+        im.alpha_composite(l, (x0 + 3, 6 - l.height // 2))
+    return im
+
+
 def swizzle(px, wbytes, h):
     out = bytearray(len(px))
     src = 0
@@ -314,6 +405,14 @@ def main():
             im = calpills(im, text)
         elif kind == 'convdate':
             im = convdate(im, text)
+        elif kind == 'gamebadge':
+            im = gamebadge(im, text)
+        elif kind == 'backlog':
+            im = backlog(im, text)
+        elif kind == 'saveparts':
+            im = saveparts(im, text)
+        elif kind == 'savewindow':
+            im = savewindow(im, text)
         elif kind == 'simcard':
             im = simcard(im, text)
         elif kind == 'optiontext':
