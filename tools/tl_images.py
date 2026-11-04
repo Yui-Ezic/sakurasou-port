@@ -507,6 +507,34 @@ def dlc(im, name, text):
     return im
 
 
+def chip(im, box, tint, name, size=10):
+    """Horizontal-gradient stat chip (tint fading out at both ends) with grey lettering on a white halo."""
+    x0, y0, x1, y1 = box
+    w, h = x1 - x0, y1 - y0
+    clear(im, (x0, y0 - 2, x1, y1 + 2))
+    k = 4
+    bar = Image.new('RGBA', (w * k, (h - 2) * k), (0, 0, 0, 0))
+    px = bar.load()
+    for x in range(w * k):
+        e = min(x, w * k - 1 - x) / (7.0 * k)
+        a = int(255 * min(1.0, 0.25 + 0.75 * e))
+        for y in range((h - 2) * k):
+            px[x, y] = tint + (a,)
+    im.alpha_composite(bar.resize((w, h - 2), Image.BOX), (x0, y0 + 1))
+    l = fit_label(name, size, (70, 70, 70), (255, 255, 255), 1, w - 2)
+    im.alpha_composite(l, (x0 + (w - l.width) // 2, y0 + (h - l.height) // 2))
+
+
+def psrts(im, text):
+    """menu_psrts.txg: six chips round the status hexagon. text = Шарм|Объём|Стабил.|Драйв|Эмоции|Красота (top, l-up, r-up, l-down, r-down, bottom)"""
+    t = text.split('|')
+    spec = [((117, 4, 155, 16), (235, 235, 100)), ((73, 26, 110, 38), (200, 150, 230)), ((162, 26, 199, 38), (150, 185, 190)),
+            ((73, 59, 110, 71), (120, 200, 230)), ((162, 59, 199, 71), (220, 120, 120)), ((117, 81, 155, 93), (230, 170, 90))]
+    for (box, tint), name in zip(spec, t):
+        chip(im, box, tint, name, 9)
+    return im
+
+
 def swizzle(px, wbytes, h):
     out = bytearray(len(px))
     src = 0
@@ -571,6 +599,8 @@ def main():
             im = rankfont(im, text)
         elif kind == 'dlc':
             im = dlc(im, name, text)
+        elif kind == 'psrts':
+            im = psrts(im, text)
         elif kind == 'simcard':
             im = simcard(im, text)
         elif kind == 'optiontext':
