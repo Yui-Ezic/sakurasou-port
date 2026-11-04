@@ -32,6 +32,7 @@ cmake, ninja, clang, SDL2 2.32 installed.
 ## Port status (keep updated)
 - Russian translation in progress on branch `translation-ru`: plan and pilot results in `docs/TRANSLATION_PLAN.md`, workflow in `translation/README.md`. Text is swapped at display time (`port/src/tr.cpp`); never patch `.ssb` files. `translation/ru/` must stay free of Japanese text.
 - Playable from boot to all six route endings; see `docs/DIFFERENCES.md` for what is tested, untested, and different. User docs: `port/README.md`.
+- Windows: MSYS2 UCRT64 at `C:\msys64` (gcc, cmake, ninja, SDL2, ffmpeg, ntldd). `bash tools/package_win.sh` builds `port/build-win` (GUI) and `port/build-con` (console) and a portable `dist/Sakurasou-win64/` with DLLs and the translation. Run dev modes with `PATH=/c/msys64/ucrt64/bin:$PATH`. All 430 scenarios scan on Windows (only the test script SCR_TGS_0000 times out).
 - Source: `port/` (C++20, SDL2, libav*, vendored clHCA). Build: `cmake -S port -B port/build -G Ninja && ninja -C port/build`. Reads assets directly from the unmodified ISO.
 - Dev: `port/build/sakurasou --scan [filter]`, `--play SCN_x.ssb`, `--headless --frames N --shot-every N DIR --keys "frame:mask,..."` with `SDL_VIDEODRIVER=dummy`.
 - Knowledge: `docs/RE_NOTES.md` and subsystem specs `docs/spec_*.md`. `work/` is regenerable scratch (extracted data, full decompile `work/eboot_decomp.c`; regenerate with tools/ghidra_scripts/DumpAll.java through analyzeHeadless on a copy of the project, without -noanalysis).

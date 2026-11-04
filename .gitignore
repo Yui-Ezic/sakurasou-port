@@ -6,6 +6,9 @@ ghidra/
 
 # Build output
 port/build/
+port/build-win/
+port/build-con/
+dist/
 __pycache__/
 *.pyc
 

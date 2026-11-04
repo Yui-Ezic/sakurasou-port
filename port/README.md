@@ -8,12 +8,22 @@ Needs CMake, Ninja, a C++20 compiler, SDL2 2.0.18+ and FFmpeg libraries (libavco
     cmake -S port -B port/build -G Ninja
     ninja -C port/build
 
+### Windows
+Install [MSYS2](https://www.msys2.org/) (`winget install MSYS2.MSYS2`), then in it:
+
+    pacman -S --needed mingw-w64-ucrt-x86_64-{gcc,cmake,ninja,pkgconf,SDL2,ffmpeg,ntldd}
+
+From Git Bash or MSYS2 at the repository root, `bash tools/package_win.sh` builds `dist/Sakurasou-win64/`: `Sakurasou.exe` (no console),
+`Sakurasou-console.exe` (with console, for logs and developer modes), the DLLs, and the Russian translation. The folder is portable;
+the player drops their ISO next to the exe. A `translation/ru.pack` next to the exe loads automatically (`--no-tl` turns that off).
+Add `-DSAKURA_CONSOLE=ON` to the cmake call for a console build by hand.
+
 ## Run
     port/build/sakurasou --iso path/to/sakuraso-no-pet-na-kanojo-psp.iso
 
 Add `--tl translation/build` to play with the Russian translation; see `translation/README.md`.
 
-`--iso` can be omitted when the ISO is in the current directory or a parent. Saves go to the SDL per-user folder (Linux: `~/.local/share/Sakurasou/SakurasouPort/`), or to `SAKURA_SAVE_DIR` if set.
+`--iso` can be omitted when the ISO is in the current directory or a parent. Saves go to the SDL per-user folder (Linux: `~/.local/share/Sakurasou/SakurasouPort/`, Windows: `%APPDATA%\Sakurasou\SakurasouPort\`), or to `SAKURA_SAVE_DIR` if set.
 
 ## Controls
 | PSP | Keyboard | Mouse | Gamepad |

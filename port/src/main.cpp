@@ -18,10 +18,36 @@
 
 static constexpr uint32_t kFakeF5 = 0xf5000000u, kFakeF8 = 0xf8000000u;   // --keys values for real key events
 
+static std::string exeDir() {
+    char* b = SDL_GetBasePath();
+    std::string d = b ? b : "";
+    SDL_free(b);
+    return d;
+}
+
 static std::string findIso(const char* argv0) {
-    for (auto p : {"sakuraso-no-pet-na-kanojo-psp.iso", "../sakuraso-no-pet-na-kanojo-psp.iso", "../../sakuraso-no-pet-na-kanojo-psp.iso", "game.iso"})
+    std::string base = exeDir();
+    for (auto p : {"sakuraso-no-pet-na-kanojo-psp.iso", "../sakuraso-no-pet-na-kanojo-psp.iso", "../../sakuraso-no-pet-na-kanojo-psp.iso", "game.iso"}) {
         if (std::filesystem::exists(p)) return p;
+        if (!base.empty() && std::filesystem::exists(base + p)) return base + p;
+    }
+    // Any single .iso next to the executable (players often keep their own file name).
+    std::error_code ec;
+    if (!base.empty())
+        for (auto& e : std::filesystem::directory_iterator(base, ec))
+            if (e.is_regular_file() && e.path().extension() == ".iso") { auto u = e.path().u8string(); return std::string(u.begin(), u.end()); }
     return "";
+}
+
+// A release folder ships the translation as "translation/ru.pack" next to the executable.
+static std::string findTranslation() {
+    std::string d = exeDir() + "translation";
+    return std::filesystem::exists(d + "/ru.pack") ? d : "";
+}
+
+static void fatal(const std::string& msg) {
+    fprintf(stderr, "%s\n", msg.c_str());
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Sakurasou", msg.c_str(), nullptr);
 }
 
 // ---- developer test modes (no window needed) ----
@@ -180,10 +206,16 @@ int main(int argc, char** argv) {
     for (size_t i = 0; i + 1 < args.size(); i++) if (args[i] == "--iso") iso = args[i + 1];
     if (iso.empty()) iso = findIso(argv[0]);
     if (iso.empty() || !g_fs.mount(iso)) {
-        fprintf(stderr, "Cannot open the game image (%s). Use --iso <path>. %s\n", iso.c_str(), g_fs.error.c_str());
+        fatal("Cannot open the game image (" + iso + "). Put the PSP ISO next to the executable or use --iso <path>. " + g_fs.error);
         return 2;
     }
-    for (size_t i = 0; i + 1 < args.size(); i++) if (args[i] == "--tl" && !trInit(args[i + 1])) return 2;
+    bool tlGiven = false;
+    for (size_t i = 0; i + 1 < args.size(); i++) if (args[i] == "--tl") {
+        tlGiven = true;
+        if (!trInit(args[i + 1])) { fatal("Cannot load the translation from " + args[i + 1]); return 2; }
+    }
+    if (!tlGiven && std::find(args.begin(), args.end(), "--no-tl") == args.end())
+        if (std::string d = findTranslation(); !d.empty()) trInit(d);
     for (size_t i = 0; i + 1 < args.size(); i++) if (args[i] == "--tl-dump") { g_fontM.load("font_m.fnt"); trDump(args[i + 1]); return 0; }
     for (size_t i = 0; i < args.size(); i++) {
         if (args[i] == "--test-audio" && i + 2 < args.size()) return testAudio(args[i+1].c_str(), args[i+2].c_str());
