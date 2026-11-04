@@ -418,6 +418,34 @@ def infonames(im, text):
     return im
 
 
+# name-list atlases: (x, y, cell width) of every 16 px row cell, in the order of the tsv text
+CELLS = {
+    'omake_menu_name.txg': [(0, 16 * i, 96) for i in range(5)],
+    'omake_event_name.txg': [(0, 16 * i, 128) for i in range(6)],
+    'omake_pose_name.txg': [(0, 16 * i, 80) for i in range(8)] + [(80, 0, 128)] + [(80, 16 * i, 80) for i in range(1, 8)]
+                           + [(160, 16, 48), (160, 32, 48), (160, 48, 48), (160, 64, 96), (160, 80, 48), (160, 96, 48), (160, 112, 78)] + [(208, 16 * i, 48) for i in (1, 2, 3, 5, 6)],
+    'omake_voice_ch_name.txg': [(0, 16 * i, 94) for i in range(9)] + [(0, 144, 132)] + [(0, 160, 94), (0, 176, 94)],
+}
+
+
+def rowlist(im, name, text):
+    """Replaces dark lettering in fixed 16 px cells; each Russian text is shrunk to the old text's width."""
+    cells = CELLS[name]
+    t = text.split('|')
+    assert len(t) == len(cells), (name, len(t), len(cells))
+    ink = (20, 20, 20)
+    for (x, y, w), s in zip(cells, t):
+        box = (x, y, x + w, y + 16)
+        bb = im.crop(box).split()[3].point(lambda v: 255 if v > 60 else 0).getbbox()
+        if not bb or not s:
+            continue
+        ow = bb[2] - bb[0]
+        clear(im, box)
+        l = fit_label(s, 12, ink, ink, 0, max(ow, 24))
+        im.alpha_composite(l, (x + bb[0], y + (16 - l.height) // 2))
+    return im
+
+
 def swizzle(px, wbytes, h):
     out = bytearray(len(px))
     src = 0
@@ -476,6 +504,8 @@ def main():
             im = infoparts(im, text)
         elif kind == 'infonames':
             im = infonames(im, text)
+        elif kind == 'rowlist':
+            im = rowlist(im, name, text)
         elif kind == 'simcard':
             im = simcard(im, text)
         elif kind == 'optiontext':
