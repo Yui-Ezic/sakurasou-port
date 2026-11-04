@@ -38,17 +38,18 @@ static bool loadPack() {
     std::string d; char buf[65536]; size_t n;
     while ((n = fread(buf, 1, sizeof buf, f)) > 0) d.append(buf, n);
     fclose(f);
-    if (d.rfind("#SAKURA-TL 1\n", 0) != 0) { fprintf(stderr, "translation: bad pack header\n"); return false; }
+    if (d.rfind("#SAKURA-TL 1", 0) != 0) { fprintf(stderr, "translation: bad pack header\n"); return false; }
     s_tab.clear();
     size_t i = d.find('\n') + 1;
     while (i < d.size()) {
         size_t e = d.find('\n', i); if (e == std::string::npos) e = d.size();
+        size_t eEnd = e; if (eEnd > i && d[eEnd - 1] == '\r') eEnd--;   // tolerate a pack that was checked out with CRLF
         size_t t = d.find('\t', i);
         if (t != std::string::npos && t < e) {
             uint64_t k = strtoull(d.substr(i, t - i).c_str(), nullptr, 16);
-            std::string v; v.reserve(e - t);
-            for (size_t j = t + 1; j < e; j++) {
-                if (d[j] == '\\' && j + 1 < e) { j++; v += d[j] == 'n' ? '\n' : d[j]; }
+            std::string v; v.reserve(eEnd - t);
+            for (size_t j = t + 1; j < eEnd; j++) {
+                if (d[j] == '\\' && j + 1 < eEnd) { j++; v += d[j] == 'n' ? '\n' : d[j]; }
                 else v += d[j];
             }
             s_tab[k] = std::move(v);

@@ -1,0 +1,7 @@
+# Keep LF everywhere (Windows checkouts must not rewrite scripts or the translation pack) and never touch binaries.
+* text=auto eol=lf
+*.pack -text
+translation/release/assets/** binary
+*.iso binary
+*.png binary
+*.ico binary
