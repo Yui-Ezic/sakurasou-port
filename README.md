@@ -22,14 +22,14 @@ That's it. The game starts in Russian; **Settings → Language** switches to Jap
 | ○ confirm / advance | Z, Enter, Space | Left click | A |
 | × cancel | X, Esc, Backspace | Right click | B |
 | □ | A | | X |
-| △ menu (in scenes) | S | | Y |
+| △ menu (in scenes) | S, Esc | | Y |
 | L (hold: hide the text box) | Q, PageUp | | LB |
 | R (hold: skip) | W, PageDown, Left Ctrl | | RB |
 | SELECT: backlog | Tab | | Back |
 | START: auto mode | F | | Start |
 | D-pad | Arrows | | D-pad, left stick |
 
-F11 or Alt+Enter toggles fullscreen; the picture scales to any window size.
+In a scene, once the text has finished and the game is waiting for you, Esc opens the menu (like S) instead of advancing; everywhere else Esc is cancel. F11 or Alt+Enter toggles fullscreen; the picture scales to any window size.
 
 ### Saves
 

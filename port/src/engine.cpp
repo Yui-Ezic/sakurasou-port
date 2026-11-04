@@ -54,7 +54,7 @@ void Job::draw() { if (Job* t = top()) { t->onDraw(); t->draw(); } }
 static SDL_GameController* pad = nullptr;
 static bool s_text = false; std::string g_textTyped; int g_textBackspace = 0;
 void textEntry(bool on) { s_text = on; g_textTyped.clear(); g_textBackspace = 0; if (on) SDL_StartTextInput(); else SDL_StopTextInput(); }
-static uint32_t keyMask() {
+static uint32_t keyMask(bool escMenu) {
     const Uint8* k = SDL_GetKeyboardState(nullptr);
     uint32_t b = 0;
     auto on = [&](std::initializer_list<int> sc, uint32_t m) { for (int s : sc) if (k[s]) b |= m; };
@@ -62,7 +62,8 @@ static uint32_t keyMask() {
     on({SDL_SCANCODE_UP}, BTN_UP); on({SDL_SCANCODE_DOWN}, BTN_DOWN);
     on({SDL_SCANCODE_LEFT}, BTN_LEFT); on({SDL_SCANCODE_RIGHT}, BTN_RIGHT);
     on({SDL_SCANCODE_Z, SDL_SCANCODE_RETURN, SDL_SCANCODE_SPACE}, BTN_CIRCLE);
-    on({SDL_SCANCODE_X, SDL_SCANCODE_ESCAPE, SDL_SCANCODE_BACKSPACE}, BTN_CROSS);
+    on({SDL_SCANCODE_X, SDL_SCANCODE_BACKSPACE}, BTN_CROSS);
+    on({SDL_SCANCODE_ESCAPE}, escMenu ? BTN_TRIANGLE : BTN_CROSS);
     on({SDL_SCANCODE_A}, BTN_SQUARE); on({SDL_SCANCODE_S}, BTN_TRIANGLE);
     on({SDL_SCANCODE_Q, SDL_SCANCODE_PAGEUP}, BTN_L); on({SDL_SCANCODE_W, SDL_SCANCODE_PAGEDOWN, SDL_SCANCODE_LCTRL}, BTN_R);
     on({SDL_SCANCODE_TAB}, BTN_SELECT); on({SDL_SCANCODE_F}, BTN_START);
@@ -88,6 +89,7 @@ uint32_t g_injectButtons = 0;
 void pumpEvents(bool& quit) {
     SDL_Event e;
     uint32_t pulse = g_injectButtons; g_injectButtons = 0;
+    const bool escMenu = g_input.escMenu; g_input.escMenu = false;   // scenes re-assert it every update
     static uint32_t mouseHeld = 0;
     g_input.mouseMoved = false; g_input.mouseClick = false; g_input.wheel = 0;
     while (SDL_PollEvent(&e)) {
@@ -115,5 +117,5 @@ void pumpEvents(bool& quit) {
         case SDL_CONTROLLERDEVICEREMOVED: if (pad) { SDL_GameControllerClose(pad); pad = nullptr; } break;
         }
     }
-    g_input.beginFrame(keyMask() | mouseHeld | pulse);
+    g_input.beginFrame(keyMask(escMenu) | mouseHeld | pulse);
 }

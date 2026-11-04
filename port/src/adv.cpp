@@ -311,7 +311,7 @@ void AdvScene::onUpdate() {
         if (!vm.halted()) vm.run();
         if (vm.halted()) { leave(); return; }
         bool inWait = winA.text == TextWin::T_WAIT || winB.text == TextWin::T_WAIT;
-        if (inWait && !g_advNoMenu) menuInput();
+        if (inWait && !g_advNoMenu) { g_input.escMenu = true; menuInput(); }
         if (pendingScene < 0) {
             winUpdate1(winA, false); winUpdate1(winB, true); choiceUpdate1();
             cloudsUpdate();

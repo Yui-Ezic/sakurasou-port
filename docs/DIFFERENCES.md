@@ -20,6 +20,7 @@ Tested means run in this project. Nothing has been compared frame-by-frame with 
 
 ## Known differences
 - PSP savedata dialogs and on-screen keyboard are replaced by the in-game slot screen and native text entry. The game-title box is a plain panel rather than the original art.
+- Esc is a PC addition: it maps to × (cancel) in menus, but to △ (open menu) while an ADV scene waits for input (`Input::escMenu`, set by `AdvScene`). × is what advances text, so Esc used to skip lines. X and Backspace stay ×.
 - DLC is shown as unavailable: DR01-04 data is not on the disc. Install option is inert.
 - Sound channels use linear per-sample volume ramps rather than frame-stepped ones.
 - Assets load synchronously, so the original's load waits do not occur.

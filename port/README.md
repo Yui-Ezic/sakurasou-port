@@ -31,14 +31,14 @@ Add `--tl translation/release` to play with the Russian translation (the tracked
 | ○ confirm / advance | Z, Enter, Space | Left click | A |
 | × cancel | X, Esc, Backspace | Right click | B |
 | □ | A | | X |
-| △ menu (in scenes) | S | | Y |
+| △ menu (in scenes) | S, Esc | | Y |
 | L (held: hide UI) | Q, PageUp | | LB |
 | R (held: skip) | W, PageDown, Left Ctrl | | RB |
 | SELECT backlog | Tab | | Back |
 | START auto mode | F | | Start |
 | D-pad | Arrows | | D-pad, left stick |
 
-F11 or Alt+Enter toggles fullscreen. The picture scales to any window size at the original aspect ratio.
+In a scene, once the text has finished and the game is waiting for you, Esc opens the menu (like S) instead of advancing; everywhere else Esc is cancel. F11 or Alt+Enter toggles fullscreen. The picture scales to any window size at the original aspect ratio.
 
 ### Linux release
 `bash tools/build_linux.sh` builds static SDL2 and a minimal FFmpeg and produces `dist/Sakurasou-linux-x86_64.tar.gz`, which needs nothing installed. Both packages are built in CI (`.github/workflows/release.yml`) when a `v*` tag is pushed.

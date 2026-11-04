@@ -18,6 +18,7 @@ struct Input {
     uint32_t held = 0, pressed = 0, released = 0, repeat = 0;
     int mouseX = 0, mouseY = 0;
     bool mouseMoved = false, mouseClick = false;
+    bool escMenu = false;   // set by a scene each frame it wants Esc to act as Triangle (open menu) instead of Cross
     int wheel = 0;
     uint8_t rep[32] = {};
     void beginFrame(uint32_t now);
