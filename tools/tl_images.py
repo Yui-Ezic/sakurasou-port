@@ -535,6 +535,20 @@ def psrts(im, text):
     return im
 
 
+def squareparts(im, text):
+    """square_parts.txg state pills at x=208 (未着手 y0, 作業中 y16, LOCK y32 kept, 仕様 y48) and the 済 stamp (208,64,240,96)."""
+    t = text.split('|')
+    for (x0, y0, x1, y1), s in (((209, 2, 239, 14), t[0]), ((209, 18, 239, 30), t[1]), ((211, 50, 229, 62), t[3])):
+        bg = mode_color(im, (x0, y0, x1, y1))
+        retext(im, (x0 + 1, y0 + 1, x1 - 1, y1 - 1), s, 9, (255, 255, 255), (255, 255, 255), 0, solid=True)
+    d = ImageDraw.Draw(im)
+    d.ellipse((224 - 9, 78 - 9, 224 + 9, 78 + 9), fill=(0, 0, 0, 0))
+    red = (225, 30, 30)
+    l = fit_label(t[4], 11, red, red, 0, 17)
+    im.alpha_composite(l, (224 - l.width // 2, 78 - l.height // 2))
+    return im
+
+
 def swizzle(px, wbytes, h):
     out = bytearray(len(px))
     src = 0
@@ -601,6 +615,8 @@ def main():
             im = dlc(im, name, text)
         elif kind == 'psrts':
             im = psrts(im, text)
+        elif kind == 'squareparts':
+            im = squareparts(im, text)
         elif kind == 'simcard':
             im = simcard(im, text)
         elif kind == 'optiontext':
