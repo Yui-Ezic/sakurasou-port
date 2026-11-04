@@ -549,6 +549,38 @@ def squareparts(im, text):
     return im
 
 
+def wrap(text, f, maxw):
+    lines, cur = [], ''
+    for w in text.split(' '):
+        t = (cur + ' ' + w).strip()
+        if f.getlength(t) / SS <= maxw or not cur:
+            cur = t
+        else:
+            lines.append(cur); cur = w
+    return lines + [cur]
+
+
+def legal(im, text):
+    """logo_dontcopy: dark 480x272 notice. text = heading|paragraph (paragraphs split by ~). Written as a plain TXG under the .txgtl name."""
+    head, body = text.split('|')
+    im = Image.new('RGBA', (480, 272), (31, 31, 31, 255))
+    d = ImageDraw.Draw(im)
+    f = ImageFont.truetype(FONT, 13 * SS)
+    big = ImageFont.truetype(FONT, 15 * SS)
+    big_im = Image.new('L', (480 * SS, 272 * SS), 0)
+    dd = ImageDraw.Draw(big_im)
+    w = dd.textlength(head, font=big)
+    dd.text(((480 * SS - w) / 2, 62 * SS), head, font=big, fill=255)
+    y = 100
+    for para in body.split('~'):
+        for ln in wrap(para, f, 420):
+            dd.text((30 * SS, y * SS), ln, font=f, fill=255)
+            y += 21
+    mask = big_im.resize((480, 272), Image.LANCZOS)
+    im.paste((255, 255, 255, 255), (0, 0), mask)
+    return im
+
+
 def swizzle(px, wbytes, h):
     out = bytearray(len(px))
     src = 0
@@ -575,7 +607,7 @@ def main():
         if line.startswith('#') or not line.strip():
             continue
         name, kind, text = line.rstrip('\n').split('\t')
-        im = img.txg(open(os.path.join(DATA, name), 'rb').read()).convert('RGBA')
+        im = img.load(os.path.join(DATA, name)).convert('RGBA')
         if kind == 'title':
             im = title_parts(im, text.split('|'))
         elif kind == 'start':
@@ -617,6 +649,8 @@ def main():
             im = psrts(im, text)
         elif kind == 'squareparts':
             im = squareparts(im, text)
+        elif kind == 'legal':
+            im = legal(im, text)
         elif kind == 'simcard':
             im = simcard(im, text)
         elif kind == 'optiontext':
