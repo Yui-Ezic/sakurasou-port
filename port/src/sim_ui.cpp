@@ -75,12 +75,16 @@ void DeadlineWidget::draw() {
     if (group == 4 || !font) return;
     const Tex& f = *font;
     const SQ* T = T_1e8a38;
-    if (group != 3) q(f, T[20], x + 5, y + 10);
-    q(f, T[21], x + 30, y + 10);
     q(f, T[22], x - 20, y - 22);
     q(f, T[23], x + 30, y - 22);
-    float lx = x - 23 + (group == 0 ? -7 : group == 3 ? 3 : 0);
-    q(f, T[24 + group], lx, y + 10);
+    if (trOn()) {   // Russian: one 96x16 line from the free area of common_font.txg (tl_images.py 'deadline')
+        int x0 = (group >> 1) * 128, y0 = 96 + 16 * (group & 1);
+        ui(f, {x0, y0, x0 + 96, y0 + 16}, x - 6, y + 10);
+    } else {
+        if (group != 3) q(f, T[20], x + 5, y + 10);
+        q(f, T[21], x + 30, y + 10);
+        q(f, T[24 + group], x - 23 + (group == 0 ? -7 : group == 3 ? 3 : 0), y + 10);
+    }
     int v = std::max(deadline - turn, 0);
     Color red = argb(0xff0035ff), black = argb(0xff000000);
     if (v < 10) {

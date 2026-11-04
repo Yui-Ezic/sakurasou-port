@@ -139,6 +139,6 @@ because the engine cuts them out by fixed coordinates:
 - `menu_img.txg` captions, `menu_button` DLC tile at (288,176).
 - Calendar and number fonts with kanji (`calendar_font*`, `common_calendar`, `conversation_date`, `information_font*`): weekdays, 月/日, 企画書/α版/β版 labels.
 - Name atlases: `omake_event_name`, `omake_pose_name`, `omake_voice_ch_name`, `omake_menu_name`, `task_name`, `information_font_name`, `title_copyright` is Latin already.
-- Done: `action_choice_parts.txg` and `_on.txg` (kinds `simcard`, `simchoice`: mode buttons, captions, six names, мотив./здоровье tiles, warning banners, working pill, day suffix). Still open on that screen: the deadline widget (企画書提出まで / あと / 日), probably in `information_parts` or `common_calendar`.
+- Done: `action_choice_parts.txg` and `_on.txg` (kinds `simcard`, `simchoice`: mode buttons, captions, six names, мотив./здоровье tiles, warning banners, working pill, day suffix). - Done: the deadline widget (`common_font.txg`, kind `deadline`): あと/日 replaced in place, four Russian lines (концепт/альфа/бета/мастер) in the atlas's free area y=96..128; `DeadlineWidget::draw` uses them when `trOn()` (not by atlas height: a taller atlas would break the fractional UVs).
 - Parts with short labels: `action_parts_game`, `information_parts`, `saveload_window`, `contest_*`, `dlc_*`, `conversation_friend` (親密度アップ), `backlog_parts`, `note_bg`.
 - Logos: `logo_dontcopy` (legal notice), `title_logo` and `title_trial` (kept Japanese by decision). `logo_*` company logos stay.

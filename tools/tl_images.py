@@ -217,6 +217,23 @@ def simcard(im, text):
     return im
 
 
+def deadline(im, text):
+    """common_font.txg 256x128: 'あと'/'日' are replaced in place; four 96x16 lines for 企画書/α版/β版/マスター go
+    into the free area at y=96 and y=112 (keep in step with kDeadRu in port/src/sim_ui.cpp).
+    text = Ещё|дн.|four lines."""
+    t = text.split('|')
+    ink = (40, 30, 30)
+    for (x0, y0, w, h), s in (((56, 56, 24, 16), t[0]), ((80, 56, 16, 16), t[1])):
+        clear(im, (x0, y0, x0 + w, y0 + h))
+        l = fit_label(s, 11, ink, ink, 0, w)
+        im.alpha_composite(l, (x0 + (w - l.width) // 2, y0 + (h - l.height) // 2))
+    for i, s in enumerate(t[2:6]):
+        x0, y0 = 128 * (i // 2), 96 + 16 * (i % 2)
+        l = fit_label(s, 12, ink, ink, 0, 96)
+        im.alpha_composite(l, (x0 + (96 - l.width) // 2, y0 + (16 - l.height) // 2))
+    return im
+
+
 def swizzle(px, wbytes, h):
     out = bytearray(len(px))
     src = 0
@@ -255,6 +272,8 @@ def main():
             im = menubutton(im, text)
         elif kind == 'simchoice':
             im = simchoice(im, text)
+        elif kind == 'deadline':
+            im = deadline(im, text)
         elif kind == 'simcard':
             im = simcard(im, text)
         elif kind == 'optiontext':
