@@ -126,7 +126,8 @@ const std::string& tr(const std::string& jp) {
 }
 
 std::string trFmt(const char* jpFormat, ...) {
-    const std::string& f = tr(jpFormat);
+    const std::string jp = jpFormat;   // tr() returns its argument when untranslated: keep that string alive
+    const std::string& f = tr(jp);
     va_list ap; va_start(ap, jpFormat);
     char b[512]; vsnprintf(b, sizeof b, f.c_str(), ap);
     va_end(ap);

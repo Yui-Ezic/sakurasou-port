@@ -3,7 +3,7 @@
 Each picture is a shrunken game screen with red arrows and rings. The screen is rebuilt from the port's own Russian
 rendering: tools/tl_tutorial.ctl drives a headless run that saves work/tut/sNN.bmp (tools/tl_tutorial_shots.sh), and
 the capture is pasted into the original frame. Arrows are copied from the original picture through a mask of the
-arrow sprite; rings are redrawn. Where the port does not draw a screen like the original (the task list, TUT07), or a
+arrow sprite; rings are redrawn. Where the port does not draw a screen like the original, or a
 picture has drawn captions (TUT14), Russian text is painted over the original instead.
 
 Used by tl_images.py (kind 'tutorial'); the output is the original 32-byte CBG header followed by a TXG, which the
@@ -28,6 +28,7 @@ SPEC = {
     4: dict(shot='s04', rect=FULL, rings=[(325, 161, 379, 198)], arrows=[((385, 169, 420, 190), 'L')]),
     5: dict(shot='s05', rect=FULL, rings=[(328, 125, 364, 149)], arrows=[((370, 126, 405, 147), 'L')]),
     6: dict(shot='s06', rect=FULL, rings=[(203, 86, 239, 111)], arrows=[((161, 87, 196, 109), 'R')]),
+    7: dict(shot='s07', rect=FULL),
     8: dict(shot='s08', rect=FULL, rings=[(111, 103, 185, 133)], arrows=[((70, 107, 105, 127), 'R')]),
     9: dict(shot='s09', rect=COL, rings=[(180, 49, 350, 96)], arrows=[((138, 62, 173, 82), 'R')]),
     10: dict(shot='s10', rect=COL, rings=[(180, 95, 350, 142)], arrows=[((138, 108, 173, 128), 'R')]),
@@ -36,7 +37,7 @@ SPEC = {
     13: dict(shot='s13', rect=COL, rings=[(180, 141, 350, 188)], arrows=[((138, 154, 173, 174), 'R')]),
     14: dict(shot='s14', rect=ROW),
     15: dict(shot='s15', rect=FULL, rings=[(92, 165, 183, 191)], arrows=[((51, 167, 86, 188), 'R')]),
-    16: dict(),                                          # painted over the original (tl_images.tut16)
+    16: dict(shot='s16', rect=FULL),
     # TUT17: the Russian description ends in "ключ α" further right than "αキー": ring and arrow follow it
     17: dict(shot='s17', rect=FULL, rings=[(226, 86, 270, 112), (262, 160, 305, 186)], arrows=[((279, 163, 314, 185), 'L', (33, 0))]),
 }
@@ -130,7 +131,7 @@ def screen(out, orig, shot, rect):
 
 
 def build(n, orig, painter=None):
-    """orig: the ISO picture as RGBA. painter(out, orig) paints extra Russian text (TUT07, TUT14)."""
+    """orig: the ISO picture as RGBA. painter(out, orig) paints extra Russian text (TUT14)."""
     s = SPEC.get(n, {})
     out = orig.copy()
     if s.get('shot'):

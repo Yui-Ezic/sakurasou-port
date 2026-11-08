@@ -104,9 +104,6 @@
 {"by": "opus", "k": "19fbdc9806d37e8a", "note": "", "ru": "Задачи второй половины бета-версии\nС задач снят [LOCK]", "st": "draft"}
 {"by": "opus", "k": "a611487fb152f6d1", "note": "", "ru": "Задачи периода мастер-версии\nС задач снят [LOCK]", "st": "draft"}
 {"by": "opus", "k": "b24a86b78e059829", "note": "", "ru": "Всё верно?", "st": "draft"}
-{"by": "opus", "k": "153e52b8dd60064f", "note": "", "ru": "×Назад  Здесь можно посмотреть планы работы персонажей", "st": "draft"}
-{"by": "opus", "k": "0ee6ca0f431b39e4", "note": "", "ru": "Ост. %s.%s дн.", "st": "draft"}
-{"by": "opus", "k": "88b9ac8dc29be0c2", "note": "", "ru": "Нет задач", "st": "draft"}
 {"by": "sonnet", "k": "c98a9753af8076b8", "note": "", "ru": "Пара слов от Масиро Сиины", "st": "draft"}
 {"by": "sonnet", "k": "ea6ebcca5bc6158a", "note": "", "ru": "Название игры", "st": "draft"}
 {"by": "sonnet", "k": "7fcef513994011ad", "note": "", "ru": "Избранная озвучка Масиро 01", "st": "draft"}
@@ -460,3 +457,5 @@
 {"by": "sonnet", "k": "adeb4e9ffb1b4a5b", "note": "", "ru": "Простая ритм-RPG", "st": "draft"}
 {"by": "sonnet", "k": "79160a06c36f372f", "note": "", "ru": "ARPG с полной озвучкой", "st": "draft"}
 {"by": "claude", "k": "c306e17c7b443f3d", "note": "", "ru": "Дзин", "st": "draft"}
+{"by": "claude", "k": "2ee7c928f1a2d437", "note": "", "ru": "×Назад  �Прокрутка  Задачи сотрудников в порядке работы. Видно, какие не успеть к сдаче", "st": "draft"}
+{"by": "claude", "k": "b705df4e67ff8618", "note": "", "ru": "%s\nОсталось %d.%d/%d.%d дн.", "st": "draft"}

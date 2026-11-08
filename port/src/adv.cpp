@@ -379,7 +379,7 @@ void AdvScene::drawWinB() {
     float hy = 136 - 64 - dy;
     g_fontM.drawText("差出人：", 36, hy - 7, {0, 0, 0, 255});
     float nameX = 92;                                  // the original's fixed slot suits the 4-character label
-    if (const std::string& lbl = tr("差出人："); isCyrillic(lbl)) {
+    if (const std::string lbl = tr("差出人："); isCyrillic(lbl)) {
         nameX = 36 + 8;
         const char* p = lbl.c_str(); while (*p) nameX += g_fontM.propAdv(utf8Next(p));
     }

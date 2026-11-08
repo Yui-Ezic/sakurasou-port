@@ -49,10 +49,9 @@ are rebuilt from the port's own Russian screens:
     ~/tools/sakura-venv/bin/python tools/tl_images.py  # rows 'tutorial' in images_ru.tsv -> build/assets/BG_TUT*.cbg
 
 The steps are in `tools/tl_tutorial.ctl` (see the `--ctl` comment in `port/src/main.cpp`); states the tutorial art
-stages (illness, worries, the later chart of TUT17) are poked into GameData. `tools/tl_tutorial.py` pastes each capture
-into the original frame, copies the red arrows from the original and redraws the rings. TUT07 (the task list, which
-the port does not draw like the original) and the drawing in TUT14 get Russian text painted over the original; their
-words are in `images_ru.tsv`. Check the pictures after any change to those screens.
+stages (illness, worries, the later chart of TUT17, the ranking of TUT16) are poked into GameData. `tools/tl_tutorial.py` pastes each capture
+into the original frame, copies the red arrows from the original and redraws the rings. The drawing in TUT14 gets Russian text
+painted over the original; its words are in `images_ru.tsv`. TUT16 is the contest ranking with staged team ranks. Check the pictures after any change to those screens.
 
 ## Language switch and coverage log
 

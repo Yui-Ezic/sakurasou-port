@@ -63,7 +63,7 @@ int simRand() {
 // Table text may hold line breaks for the Japanese layout. The translation is looked up with them, then joined:
 // Japanese drops the break, Russian turns it into a space.
 std::string stripNewlines(const char* s) {
-    const std::string& t = tr(s); bool ru = isCyrillic(t);
+    const std::string jp = s, &t = tr(jp); bool ru = isCyrillic(t);   // tr() returns its argument when untranslated
     std::string o; for (const char* p = t.c_str(); *p; p++) { if (*p == '\r') continue; if (*p == '\n') { if (ru) o += ' '; continue; } o += *p; }
     return o;
 }

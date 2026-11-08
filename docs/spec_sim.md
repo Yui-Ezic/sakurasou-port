@@ -595,10 +595,21 @@ Job update `FUN_0007def4`: fade in; state0 comment scroll `FUN_00079c1c` until d
 
 Comment sub-states `FUN_00079c1c`: 0 wait intro, 1 outro, 2 wait 10 frames then next comment; after each `+0x792d0`++ when sentiment 0 ("likes" counter, seed: team0.score minus prior field); 3 wait item, 4 wait 10, 5 end check, 6 done.
 
-Ranking: rows at x spacing, row height 50: `listY = 60 - (rank-1)*50`, x for slide `= (n-rank)*50-110` etc (`FUN_0007fee0`). Rank numeral from sprites, compare with prevRank:
+Ranking list (object +0x906c0, init `FUN_000810dc`, update `FUN_000815f8`, draw `FUN_0007fc2c`) [CONFIRMED]: n = 50 / 40 /
+30 rows (stage <4 / <9 / else), one per rank, x -20. Each row falls (-20/frame) from far above to `(n-rank)*50-110`
+(the bottom of the table in view), then the list scrolls (-10/frame) towards `60-(rank-1)*50` until our row is at
+y ≤ -10 (not at all when we are in the last 3; to the top for ranks 1-2); afterwards UP/DOWN (held) scroll ±10 and
+CIRCLE closes. Before that: a "Ranking" splash (scale 1.4→1, glow 2→2.2, 9 particles easing 0.04 to their targets,
+fade out), 60 frames, the rank gauge sliding in (x -40→0, +5) with labels 10.. at `78-(i+1)*(198/(n/10))` and a pulsing
+marker at `80 - (60-y0)*198/(60-low0)`; four pulsing sparkles move with rank 1's row. Row: bands 3-slice (gold,
+silver, bronze, others; own rows pink), genre pill at rx+50.., numerals at rx-128(-6)-14i, NEW/up/down/same at
+(rx-134, ry-10), score digits right-aligned at rx+135 (9 px, comma every 3), thumbs-up (rx+140, ry-8), title strip
+at (rx, ry+8) left-aligned, genre centred at (rx+96, ry+8), team name at (rx+15, ry-10), thumbnail (rx+200, ry).
+Frame of both phases: `FUN_0007c2b8` (stripes, side pieces) under, `FUN_0007c744` (bar, stage tab at (-130,110), date
+plate at (-220,128)) over. Port tables in `sim_contest_sprites.h`. Rank numeral from sprites, compare with prevRank:
 prevRank==0 → sprite 0x1790 NEW; prev>rank up 0x1804; prev<rank down 0x1878; same 0x18ec [CONFIRMED]. Title line uses genre `&PTR_DAT_00229e48[k]`; `k` from phase/route: `phase 3,4: route1→2, route5→3, route3→4, others 1?`, `5,6: 1→5,2→6,3→7,5→8,6→9,4→10`, `>=7: 1→11,2→12,3→13,5→14,6→15,4→16`, else 0. Genre strings:
 0 RPG, 1 超スーパーRPG, 2 コマンド式王道RPG, 3 ハリウッド級RPG, 4 ボイスARPG, 5 コマンド式王道RPG, 6 オープンワールドFPS, 7 ボイスARPG, 8 ハリウッド級RPG, 9 ドラマティックRPG, 10 かんたんリズムRPG, 11 コマンド式王道RPG, 12 オープンワールドFPS, 13 完全フルボイスARPG, 14 ハリウッド級RPG, 15 ドラマティックRPG, 16 かんたんリズムRPG.
-Team header `teamName`, `gameTitle=` player: `GameData.gameTitle`; DL digits count `floor(log10(score))+1`. Exact tweening of rows is [ASSUMED]-level; data offsets in `FUN_0007fee0`, `FUN_00080aa4`.
+Team header `teamName`, `gameTitle=` player: `GameData.gameTitle`; DL digits count `floor(log10(score))+1`.
 
 ## 8. Story progression (script_system_progress.ssb) [CONFIRMED]
 
@@ -943,9 +954,33 @@ Board draw `FUN_0003bca8` [CONFIRMED], three passes: links `FUN_0003ec64` → ce
 
 Cell info panel `FUN_0004103c`, drawn at (0,-136): face (-200,46) (Sorata in states 1..2, else owner+1), description (TaskDef+0x84) at (-168,62), `あと %s.%s/%s.%s日` or `完成` at (-168,44); 14 px text.
 
-## 11. Task list (job 0x0d)
+## 11. Task list (job 0x0d) [CONFIRMED]
 
-Uses task_bg/window/count/name/psrts/cursor.txg; shows, for the character queues, remaining tasks (`FUN_00075a48`, `FUN_0007610c`, `FUN_000768d8`). Read-only view [ASSUMED]; layout not reversed. Unresolved. The port's screen is a placeholder; BG_TUT07 shows the original (character list with "残タスク N日分" badges, a schedule grid of task chips, the deadline note, a face/description/days panel).
+Ctor `FUN_00076fa8`, init `FUN_00077770`, update `FUN_000773a0` → `FUN_000768d8`, draw `FUN_000774a0`. 81 sprite records
+(task_bg/window/count/name/psrts/cursor, tables 0x1f79e8..0x1f9298; port `sim_tasklist_sprites.h`). Coordinates
+centre-origin, y up.
+- One row per character (6, or 5 while routeA<2: Otoha hidden), `y = 75 - 30*row` (+30 when scrolled: the selection
+  passes row 3, back below row 2). Rows drawn only for -70<y<80.
+- Name plate 3-slice at x -218/-175/-132 (middle x10), tint 0xffbaffff when selected; name image at (-175,y), tint
+  black / 0xff7e7e7e. A selection plate is drawn over the selected row. Orange frame 9-slice behind (x -225+50i,
+  y 93.5 / 15 (x19 high) / -62.5); its end with the scroll arrow at y -55 (down) or 85 (up, arrow rotated).
+- Badge (-115,y): blue, or red when the days do not fit; days = ceil-ish(Σ(workCost-workDone of unfinished tasks)/3
+  + 0.9); digits at x -120 (one) or -118, -126 (two), y-4, scaled with the badge. Badges for rows 0..3 (not scrolled)
+  or rows ≥2 (scrolled).
+- Days left to the deadline: routeA 0-2 → 14-turn, 3-4 → 43-turn, 5-6 → 78-turn, 7 → 92-turn. If they do not fit,
+  a budget of left*3 units is spent along the queue; chips past it are grey and the first grey one carries the
+  "実装不可 N 日分" marker (N = days - left, red digits).
+- Chips: every queue entry, `x = x0 + 50*i` (x0 starts -50 and shifts by 50 to keep the cursor in view), colour chip
+  per character or grey, scale 0.6 (1.0 on the cursor), link sprite between landed chips, a state label (未 / 着手 /
+  済 for states 3/4/5) on chips other than the cursor. Rows tinted 0xffc0c0c0 unless selected.
+- Appearing: chips wait (row+i)*5 frames, then 12 frames alpha +20, scale -0.025 from +0.3; badges wait row*5.
+- Cursor chip: its short name (font 10, line 11) centred at (x, y-2); the frame (cursor pieces at y+19 / y-18,
+  sides x±28 scaled 3.6 high) fades in +40.
+- Bottom panel at y -160 → -107 (+3/frame): band 3-slice, the selected character's face at (-175, y+12), text at
+  (-15, y+13) in a 256x32 strip: description and `あと %d.%d/%d.%d日` (15 px, 18 px lines), only if the queue is not
+  empty. Deadline note at (119.2+55.8i, 110) with its tape at (125,142) rotated 0.7 rad, deadline widget at (190,116).
+- Input after the chips appear: UP/DOWN change row (cursor clamped to the queue), RIGHT/LEFT move the cursor and
+  scroll by 50 when it passes x 185 / -45, CROSS (SE 0x1f) leaves. Help 0x1f7948.
 
 ## 12. Finish and game over (job 7) [CONFIRMED]
 
@@ -961,8 +996,7 @@ Carry-over [CONFIRMED]: `FUN_00001f6c` snapshots live GameData to the save image
 ## 14. Unresolved
 
 - Calendar `FUN_000702e0` (countdown card) and `FUN_00070684` pen animations: exact timing not traced.
-- Contest list tween values, `FUN_0007fee0` row layout details, `FUN_00080aa4`: only key constants given.
-- Task list job 0xd layout; job 0x1a purpose (no string refs); entry to S16 in action choice.
+- Job 0x1a purpose (no string refs); entry to S16 in action choice.
 - Character target list in the card (`FUN_00032668`, `FUN_00033854`) and how card rows map to `kind`: row→kind mapping [ASSUMED] from help text order and code in 28bc8.
 - Fade colour modes 0/2/3 unconfirmed.
 - `FUN_0003e6c8` stores `selectedTask=-(cursorTask+1)`; soraAction becomes 0 either way, but whether the chart uses it to restore the cursor is [ASSUMED].

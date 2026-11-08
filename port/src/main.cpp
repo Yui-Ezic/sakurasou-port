@@ -215,8 +215,8 @@ static int g_devScene = -1;   // dev: --scene ID pushes one scene (ids as in cre
 
 // dev: --ctl FILE drives a run line by line (a FIFO for interactive use, a plain file to replay):
 //   w N | p MASK [N] (press one frame, then wait N, default 10) | h MASK N (hold) | s PATH (screenshot)
-//   skip 0|1 (read-skip everything) | rewind (help bar ticker back to its start) |
-//   chartfirst (chart cursor to its first selectable task) | poke OFF VAL (int32 into GameData) | peek OFF [N] (print N int32 from GameData) | skipto JOB [MAX] (hold R and tap CIRCLE until job id JOB is the innermost
+//   skip 0|1 (read-skip everything) | rewind (help bar ticker back to its start) | nohelp |
+//   chartfirst (chart cursor to its first selectable task) | push ID (start scene ID on top) | poke OFF VAL (int32 into GameData) | peek OFF [N] (print N int32 from GameData) | skipto JOB [MAX] (hold R and tap CIRCLE until job id JOB is the innermost
 //   scene, at most MAX frames, default 100000; no CIRCLE on the sim's decision screens) | q.  Prints "ready FRAME" to stdout whenever it waits for the next line.
 struct Ctl {
     FILE* f = nullptr; int wait = 0; uint32_t hold = 0; std::string shot; bool quit = false; int until = -1;
@@ -245,6 +245,8 @@ struct Ctl {
             else if (c == "s") { shot = arg; wait = 1; }
             else if (c == "skip") g_sys.skipAll() = atoi(arg);
             else if (c == "rewind") g_help.rewind();
+            else if (c == "nohelp") g_help.hide();
+            else if (c == "push") g_root->push((int)strtol(arg, nullptr, 0));   // a scene over everything (e.g. 14, the contest)
             else if (c == "chartfirst") { extern bool g_devChartFirst; g_devChartFirst = true; }
             else if (c == "peek") { uint32_t o = (uint32_t)strtoul(arg, nullptr, 0); int32_t v = 0; for (int i = 0; i < std::max(n, 1); i++, o += 4) { if (o + 4 <= g_game.raw.size()) memcpy(&v, &g_game.raw[o], 4); printf("peek %#x %d\n", o, v); } fflush(stdout); }
             else if (c == "poke") { uint32_t o = (uint32_t)strtoul(arg, nullptr, 0); if (o + 4 <= g_game.raw.size()) memcpy(&g_game.raw[o], &n, 4); }

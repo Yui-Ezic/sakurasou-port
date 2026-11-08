@@ -103,7 +103,7 @@ struct TipsScene : Job {
                 static const char* fd[10] = {"０", "１", "２", "３", "４", "５", "６", "７", "８", "９"};
         std::string hd;
         {   // the whole format is translatable; Russian gets ASCII digits because full-width ones do not suit proportional text
-            const std::string& f = tr("ＴＩＰＳ ＮＯ．%s%s"); char b[128];
+            const std::string f = tr("ＴＩＰＳ ＮＯ．%s%s"); char b[128];
             if (isCyrillic(f)) { char n[3] = {char('0' + (k + 1) / 10), char('0' + (k + 1) % 10), 0}; snprintf(b, sizeof b, f.c_str(), n, ""); }
             else snprintf(b, sizeof b, f.c_str(), fd[(k + 1) / 10], fd[(k + 1) % 10]);
             hd = b;
