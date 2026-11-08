@@ -102,7 +102,8 @@ struct SysRow { float x, y, tx; int spr; };
 struct GameMenu : Job {
     bool reduced; TexP bg, button, psrts, imgs; PageHeader hdr; StatusPanel panel;
     int state = 0, cur = 0, sub = 0, pending = -1; float bx[4]; int nTop = 4; bool unlocked = true, expanded = false, askTitle = false, entered = false;
-    float t = 0; SysRow sys[4]{};
+    float t = 0, fx = 600; SysRow sys[4]{};
+    static constexpr float kFolderX = 183, kFolderY = 73;   // FUN_00086a2c / FUN_00086d24
     explicit GameMenu(bool r) : reduced(r) {}
     void onEnter() override {
         bg = g_gfx.load("menu_bg.txg"); button = g_gfx.load("menu_button.txg"); psrts = g_gfx.load("menu_psrts.txg"); imgs = g_gfx.load("menu_img.txg");
@@ -110,6 +111,7 @@ struct GameMenu : Job {
         unlocked = !reduced && gd().routeA != 0;
         nTop = unlocked ? 4 : 2;
         for (auto& x : bx) x = -280;
+        fx = 600;
         for (int i = 0; i < 4; i++) sys[i] = {164, 100, -170 + 90.f * i, 5 + i};
         panel.init(psrts, imgs); if (reduced) panel.shown = false;
     }
@@ -121,7 +123,7 @@ struct GameMenu : Job {
     float topX(int i) const { return -180 + 90.f * i; }
     int overTop() const {
         for (int i = 0; i < nTop; i++) if (mu::hit(topX(i), 60, 88, 56)) return i;
-        if (mu::hit(180, 60, 100, 100)) return 4;
+        if (mu::hit(fx, kFolderY, 100, 100)) return 4;
         return -1;
     }
     int overSub() const { for (int i = 0; i < 4; i++) if (mu::hit(sys[i].x, sys[i].y, 88, 56)) return i; return -1; }
@@ -152,6 +154,7 @@ struct GameMenu : Job {
         case 0: {
             bool all = true;
             for (int i = 0; i < nTop; i++) { bool was = bx[i] >= topX(i); bx[i] = std::min(topX(i), bx[i] + 20); if (!was && bx[i] >= topX(i)) mu::se(0x21); all &= bx[i] >= topX(i); }
+            fx = std::max(kFolderX, fx - 20); all &= fx <= kFolderX;   // folder slides in from the right
             if (all) state = 1;
             break; }
         case 1: if (panel.done) state = 5; break;
@@ -208,13 +211,12 @@ struct GameMenu : Job {
         mu::menuBg(); hdr.draw();
         if (!button) return;
         for (int i = 0; i < nTop; i++) ui(*button, btn(unlocked ? 1 + i : 3 + i), bx[i], 60);
-        // folder, FUN_00086bc8 (position ASSUMED: fifth cell of the top row)
-        const float fx = 180, fy = 60;
-        bool fsel = cur == 4;
-        if (expanded) ui(*button, {400, 0, 512, 120}, fx, fy);
-        else if (fsel) ui(*button, {288, 0, 400, 120}, fx, fy);
+        // system folder, FUN_00086bc8: glow when selected (sprite 32 closed, 11 open), open back (9), front (10), pinned flap (31) when closed
+        const float fy = kFolderY;
+        if (cur == 4) ui(*button, expanded ? Spr{288, 0, 400, 120} : Spr{400, 0, 512, 120}, fx, fy);
+        if (expanded) ui(*button, {176, 0, 288, 120}, fx, fy);
         ui(*button, {176, 120, 288, 240}, fx, fy);
-        if (!expanded) ui(*button, {176, 0, 288, 120}, fx - 16, fy + 27);
+        if (!expanded) ui(*button, {288, 176, 352, 224}, fx - 16, fy + 27);
         panel.draw();
         if (expanded) {
             const float mid = 30, x0 = -230, x1 = -37, x2 = 160, top = mid + t * 4 + 4, bot = mid - (t * 4 + 8);
@@ -225,8 +227,7 @@ struct GameMenu : Job {
         }
         if (state == 5 && pending == -1) {
             if (expanded) ring(sys[sub].x, sys[sub].y, 1);
-            else if (cur == 4) ring(fx, fy, 0);
-            else ring(topX(cur), 60, 0);
+            else if (cur != 4) ring(topX(cur), 60, 0);
         }
     }
 };

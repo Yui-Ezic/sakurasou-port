@@ -214,7 +214,7 @@ struct DlcMenu : Job {
             ui(*parts, {0, 0, 8, 24}, x - 80, y, 1, 1, 1, 0, c); ui(*parts, {8, 0, 16, 24}, x, y, 1, 19, 1, 0, c); ui(*parts, {16, 0, 24, 24}, x + 80, y, 1, 1, 1, 0, c);
             if (story) ui(*story, {0, 16 * k, 48, 16 * k + 16}, x - 50, y);
             mu::textCentered(g_fontS, "未配信", x + 30, y, {96, 96, 96, 255}, 10, 14);
-            if (k == cur && state) { ui(*parts, {24, 0, 40, 40}, x - 80, y); ui(*parts, {40, 0, 48, 40}, x, y, 1, 19); ui(*parts, {24, 0, 40, 40}, x + 80, y); }
+            if (k == cur && state) { ui(*parts, {24, 0, 40, 40}, x - 80, y); ui(*parts, {40, 0, 48, 40}, x, y, 1, 19); ui(*parts, {48, 0, 64, 40}, x + 80, y); }
         }
         ui(*parts, {64, 0, 256, 48}, -84, 78);
     }

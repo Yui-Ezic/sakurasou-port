@@ -283,7 +283,7 @@ menu_button sprites, px rect:
 1 仕様スクエア (0,0,88,56)   2 タスク一覧 (88,0,176,56)  3 キャラ情報 (0,56,88,112)  4 TIPS一覧 (88,56,176,112)
 5 セーブ (0,112,88,168)      6 ロード (88,112,176,168)   7 設定 (0,168,88,224)       8 タイトル (88,168,176,224)
 9 folder (176,0,288,120)  10 system folder front (176,120,288,240) 11 (288,0,400,120) 12 (352,120,416,176) 13 (288,120,352,176)
-14..22 nine-patch frame A  23..30 nine-patch B  31 DLC menu button (288,176,352,224)? 32 (400,0,512,120) 33 (56,224,72,240)
+14..22 nine-patch frame A  23..30 nine-patch B  31 system folder flap with pin (288,176,352,224) 32 (400,0,512,120) 33 (56,224,72,240)
 ```
 menu_psrts: 34..50 frame parts, 51..60 small digits 16x16, 61 '/' 8x8, 62..71 large digits 16x24, 72 "SCE Ranking" 112x16, 73..75 arrows 24x16, 76 hexagon 128x96, 77 (200,0,256,64), 78 thumb bar 120x24.
 menu_img: 79..88 game genre screenshots 96x56.
@@ -292,7 +292,7 @@ Items:
 phase = GameData.phase (dword 0xe1a). unlocked = phase != 0.
 Top row: if unlocked, 4 buttons sprite 1+i; if !unlocked, 2 buttons sprite 3+i.
   target x=-180+90i, y=60, z=0. Start x=-280, slide +20 per frame; SE(0x21) on arrival.
-System folder: index 4 in cursor space (FUN_00086b34).
+System folder: index 4 in cursor space (FUN_00086b34). Pos (183,73), slides in from x=600 at -20/frame in state 0 (FUN_00086d24). Draw FUN_00086bc8: selected -> glow 32 (closed) or 11 (open); open -> back 9; front 10; closed -> flap 31 at (x-16,y+27). No cursor frame on the closed folder.
 System row: 4 buttons sprite 5+i at x=-170+90i, y=30, z=1, visible when expanded.
 Backdrop: sprite 0 tiled, drawn by FUN_00086030.
 ```
