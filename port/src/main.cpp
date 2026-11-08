@@ -212,10 +212,53 @@ static int scanAll(const std::string& filter) {
 }
 
 static int g_devScene = -1;   // dev: --scene ID pushes one scene (ids as in createScene) instead of the boot chain
+
+// dev: --ctl FILE drives a run line by line (a FIFO for interactive use, a plain file to replay):
+//   w N | p MASK [N] (press one frame, then wait N, default 10) | h MASK N (hold) | s PATH (screenshot)
+//   skip 0|1 (read-skip everything) | rewind (help bar ticker back to its start) |
+//   chartfirst (chart cursor to its first selectable task) | poke OFF VAL (int32 into GameData) | peek OFF [N] (print N int32 from GameData) | skipto JOB [MAX] (hold R and tap CIRCLE until job id JOB is the innermost
+//   scene, at most MAX frames, default 100000; no CIRCLE on the sim's decision screens) | q.  Prints "ready FRAME" to stdout whenever it waits for the next line.
+struct Ctl {
+    FILE* f = nullptr; int wait = 0; uint32_t hold = 0; std::string shot; bool quit = false; int until = -1;
+    static int innermost() { Job* j = g_root; while (j && j->top()) j = j->top(); return j && j != g_root ? j->id : -1; }
+    void step() {
+        if (!f) return;
+        if (until >= 0) {
+            int in = innermost();
+            bool decides = in == 8 || in == 0xd || in == 0xe;   // sim screens where CIRCLE would choose (the square just takes its first task)
+            if (in == until || !--wait) { until = -1; wait = 0; }
+            else { g_injectButtons |= BTN_R | (g_frame % 8 == 0 && !decides ? BTN_CIRCLE : 0); return; }
+        }
+        if (wait > 0) { wait--; if (hold) g_injectButtons |= hold; if (!wait) hold = 0; return; }
+        printf("ready %llu\n", (unsigned long long)g_frame); fflush(stdout);
+        char line[1024];
+        while (!wait && !quit) {
+            if (!fgets(line, sizeof line, f)) { quit = true; break; }
+            char cmd[16] = {}, arg[1000] = {}; int n = 0;
+            int k = sscanf(line, "%15s %999s %d", cmd, arg, &n);
+            if (k < 1 || cmd[0] == '#') continue;
+            std::string c = cmd;
+            uint32_t m = (uint32_t)strtoul(arg, nullptr, 0);
+            if (c == "w") wait = atoi(arg);
+            else if (c == "p") { g_injectButtons |= m; wait = k >= 3 ? n : 10; }
+            else if (c == "h") { hold = m; wait = n; g_injectButtons |= m; }
+            else if (c == "s") { shot = arg; wait = 1; }
+            else if (c == "skip") g_sys.skipAll() = atoi(arg);
+            else if (c == "rewind") g_help.rewind();
+            else if (c == "chartfirst") { extern bool g_devChartFirst; g_devChartFirst = true; }
+            else if (c == "peek") { uint32_t o = (uint32_t)strtoul(arg, nullptr, 0); int32_t v = 0; for (int i = 0; i < std::max(n, 1); i++, o += 4) { if (o + 4 <= g_game.raw.size()) memcpy(&v, &g_game.raw[o], 4); printf("peek %#x %d\n", o, v); } fflush(stdout); }
+            else if (c == "poke") { uint32_t o = (uint32_t)strtoul(arg, nullptr, 0); if (o + 4 <= g_game.raw.size()) memcpy(&g_game.raw[o], &n, 4); }
+            else if (c == "skipto") { until = atoi(arg); wait = k >= 3 ? n : 100000; break; }
+            else if (c == "q") quit = true;
+            else fprintf(stderr, "ctl: unknown %s", line);
+        }
+    }
+};
+static std::string g_ctlPath;
 static int runMain(bool headless, int maxFrames, int shotEvery, const std::string& dir, const std::string& keys, const std::string& playScript, bool autoClick) {
     g_headless = headless;
     SDL_Init(SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER);
-    if (!g_gfx.init(headless, 3, false)) return 1;
+    if (!g_gfx.init(headless, headless ? 1 : 3, false)) return 1;   // headless: no 3x window copy each frame
     g_audio.init(!headless);
     g_fontM.load("font_m.fnt"); g_fontS.load("font_s.fnt");
     RootJob root; g_root = &root; root.onEnter();
@@ -237,7 +280,11 @@ static int runMain(bool headless, int maxFrames, int shotEvery, const std::strin
         }
         p = e + 1;
     }
+    Ctl ctl;
+    if (!g_ctlPath.empty() && !(ctl.f = fopen(g_ctlPath.c_str(), "r+"))) { fprintf(stderr, "ctl: cannot open %s\n", g_ctlPath.c_str()); return 1; }
     while (!quit && (maxFrames == 0 || (int)g_frame < maxFrames)) {
+        ctl.step();
+        if (ctl.quit) break;
         for (auto& k : script) if (k.first == (int)g_frame) {
             if (k.second == kFakeF5 || k.second == kFakeF8) {
                 SDL_Event ev{}; ev.type = SDL_KEYDOWN; ev.key.keysym.sym = k.second == kFakeF5 ? SDLK_F5 : SDLK_F8;
@@ -253,6 +300,7 @@ static int runMain(bool headless, int maxFrames, int shotEvery, const std::strin
         g_gfx.beginFrame();
         root.draw(); root.overlayDraw(); trDrawToast();
         if (shotEvery && g_frame % shotEvery == 0) g_gfx.screenshot(dir + "/f" + std::to_string(g_frame) + ".bmp");
+        if (!ctl.shot.empty()) { g_gfx.screenshot(ctl.shot); ctl.shot.clear(); }
         g_gfx.endFrame();
         g_frame++;
         if (!headless) {
@@ -323,6 +371,7 @@ int main(int argc, char** argv) {
             if (args[j] == "--auto") ac = true;
             if (args[j] == "--scene" && j + 1 < args.size()) g_devScene = (int)strtol(args[j+1].c_str(), nullptr, 0);
             if (args[j] == "--play" && j + 1 < args.size()) play = args[j+1];
+            if (args[j] == "--ctl" && j + 1 < args.size()) g_ctlPath = args[j+1];
         }
         return runMain(hl, fr, every, dir, keys, play, ac);
     }

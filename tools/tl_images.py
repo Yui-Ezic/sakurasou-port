@@ -550,6 +550,20 @@ def squareparts(im, text):
     red = (225, 30, 30)
     l = fit_label(t[4], 11, red, red, 0, 17)
     im.alpha_composite(l, (224 - l.width // 2, 78 - l.height // 2))
+    # day labels at (192,160) 64x16 each (T_1f1cd8), digits are drawn over them by the chart at x 18..50 / 22..54:
+    # "全 . 日" total, "あと . 日" left, "完成" done. The "." stays; 全 has no counterpart.
+    if len(t) > 8:
+        ink, edge = (255, 255, 255), (50, 60, 80)
+
+        def put(box, s, size, fill, outline):   # on transparency: clear, then centre the new word
+            clear(im, box)
+            l = fit_label(s, size, fill, outline, 1, box[2] - box[0])
+            im.alpha_composite(l, (box[0] + (box[2] - box[0] - l.width) // 2, box[1] + (box[3] - box[1] - l.height) // 2))
+        clear(im, (196, 162, 215, 176))
+        put((238, 161, 256, 176), t[5], 9, ink, edge)
+        put((192, 177, 216, 192), t[6], 9, ink, edge)
+        put((243, 177, 256, 192), t[7], 9, ink, edge)
+        put((192, 192, 256, 208), t[8], 11, red, (255, 255, 255))
     return im
 
 
@@ -611,6 +625,124 @@ def txg(im):
     return b'TXG\0' + struct.pack('<11I', 48 + len(px), 48, len(px), 0, 0, 0, len(px), 0, 0, w, h) + px
 
 
+def tut07(out, orig, text):
+    """BG_TUT07: the task list. The port does not draw this screen like the original, so the original picture keeps its
+    layout and gets Russian text, painted at screen scale (the frame is enlarged to 480x272 and shrunk back). The page
+    header and help bar come from the port's own task list (work/tut/s07.bmp).
+    text = deadline title|"left"|days|5 names|badge "remaining"|badge days|chip|small chip 未|small chip 着手|panel line 1|panel line 2"""
+    import tl_tutorial
+    t = text.split('|')
+    fx0, fy0, fx1, fy1 = tl_tutorial.FULL[1]
+    scr = orig.crop((fx0, fy0, fx1, fy1)).resize((480, 272), Image.LANCZOS)
+    port = Image.open(os.path.join(tl_tutorial.SHOTS, 's07.bmp')).convert('RGBA')
+    scr.paste(port.crop((0, 0, 140, 33)), (0, 0))
+    scr.paste(port.crop((0, 253, 480, 272)), (0, 253))
+
+    def put(box, s, size, ink, bg, align='c', edge=None):
+        fill(scr, box, bg)
+        l = fit_label(s, size, ink, edge or bg[:3], 0 if edge is None else 1, box[2] - box[0])
+        x = box[0] if align == 'l' else box[0] + (box[2] - box[0] - l.width) // 2
+        scr.alpha_composite(l, (x, box[1] + (box[3] - box[1] - l.height) // 2))
+    dark, grey = (48, 48, 48), (150, 145, 150)
+    # deadline note: "企画書提出まで" / "あと 7 日"
+    white = (255, 255, 252, 255)
+    put((372, 3, 474, 17), t[0], 11, dark, white)
+    put((396, 38, 418, 51), t[1], 10, dark, white)
+    put((449, 38, 468, 51), t[2], 10, dark, white)
+    # name plates, the first one selected
+    for i in range(5):           # plates at y 50 + 30i, 22 px high; the last one is cut by the list's bottom
+        y = 50 + 30 * i
+        put((23, y + 3, 102, y + (19 if i < 4 else 12)), t[3 + i], 13, dark if i == 0 else grey, scr.getpixel((100, y + 8)), 'l')
+    # "残タスク N 日分" badges: the number stays
+    put((106, 46, 146, 58), t[8], 8, dark, scr.getpixel((108, 59)))
+    put((125, 63, 144, 71), t[9], 8, dark, scr.getpixel((145, 66)))
+    for i in range(3):
+        y = 80 + 30 * i
+        put((110, y + 1, 140, y + 9), t[8], 7, dark, scr.getpixel((111, y + 10)))
+        put((124, y + 13, 139, y + 20), t[9], 7, dark, scr.getpixel((139, y + 12)))
+    # task chip and the two small chips
+    put((166, 53, 216, 77), t[10], 10, dark, scr.getpixel((168, 55)))
+    put((180, 146, 201, 160), t[11], 8, (200, 90, 40), scr.getpixel((181, 147)))
+    put((179, 175, 202, 190), t[12], 8, (40, 40, 200), scr.getpixel((180, 176)))
+    # bottom panel
+    pbg = scr.getpixel((250, 222))
+    put((96, 213, 300, 230), t[13], 13, dark, pbg, 'l')
+    put((96, 230, 300, 247), t[14], 13, dark, pbg, 'l')
+    out.paste(scr.resize((fx1 - fx0, fy1 - fy0), Image.LANCZOS), (fx0, fy0))
+
+
+def tut14(out, orig, text):
+    """BG_TUT14, the drawing under the screen: two captions, the task card's "あと4.0日" and name, the red note.
+    text = caption left|caption right|card prefix|card days|card name|note"""
+    t = text.split('|')
+    bg = (230, 250, 255, 255)
+
+    def put(box, s, size, ink, back, edge=None, spread=0):
+        fill(out, box, back)
+        l = fit_label(s, size, ink, edge or back[:3], spread, box[2] - box[0])
+        out.alpha_composite(l, (box[0] + (box[2] - box[0] - l.width) // 2, box[1] + (box[3] - box[1] - l.height) // 2))
+    put((64, 95, 214, 114), t[0], 14, (30, 30, 30), bg)
+    put((276, 95, 418, 114), t[1], 14, (30, 30, 30), bg)
+    put((250, 198, 454, 215), t[5], 11, (226, 0, 18), bg)
+    pink = out.getpixel((124, 152))
+    put((120, 136, 178, 154), t[2] + ' ' + t[3], 12, (255, 255, 255), pink, (205, 95, 165), 1)
+    put((97, 163, 178, 179), t[4], 10, (40, 40, 40), (255, 255, 255, 255))
+
+
+def ru_of(jp):
+    """The approved or draft Russian for a Japanese string, from translation/ru (keys only, no Japanese there)."""
+    import glob, json
+    from tl_common import key
+    if not hasattr(ru_of, 'tab'):
+        ru_of.tab = {}
+        for f in glob.glob(os.path.join(ROOT, 'translation', 'ru', '*.jsonl')):
+            for line in open(f, encoding='utf8'):
+                e = json.loads(line)
+                if e.get('st') != 'reject' and e.get('ru'):
+                    ru_of.tab[e['k']] = e['ru']
+    return ru_of.tab.get(key(jp), jp)
+
+
+def tut16(out, orig, text):
+    """BG_TUT16: the contest ranking list, which the port does not draw like this. Rows 41..46 get the Russian game
+    titles, genres and team names from the team table (team_list.tmd records 47, 38, 45, 36, 41, 46), the stage tab
+    its Russian name. Painted at screen scale like tut07."""
+    import tl_tutorial
+    tm = open(os.path.join(DATA, 'team_list.tmd'), 'rb').read()
+    team = lambda i: [ru_of(tm[8 + i * 0x120 + o:8 + i * 0x120 + o + 64].split(b'\0')[0].decode('utf8')) for o in (0, 64, 128)]
+    fx0, fy0, fx1, fy1 = tl_tutorial.FULL[1]
+    scr = Image.new('RGBA', (480, 300))      # taller, so the cut last row can be painted past the bottom edge
+    scr.paste(orig.crop((fx0, fy0, fx1, fy1)).resize((480, 272), Image.LANCZOS), (0, 0))
+
+    def put(box, s, size, ink, bg, align='l', edge=None):
+        if bg is not None:
+            fill(scr, box, bg)
+        l = fit_label(s, size, ink, edge or bg[:3], 0 if edge is None else 1, box[2] - box[0])
+        x = box[0] if align == 'l' else box[0] + (box[2] - box[0] - l.width) // 2
+        scr.alpha_composite(l, (x, box[1] + (box[3] - box[1] - l.height) // 2))
+    # row 41 shows only the bottom of its team name under the header: draw it whole, then put the header back
+    head = scr.crop((0, 0, 480, 37))
+    put((120, 30, 262, 46), team(47)[0], 12, (20, 20, 20), scr.getpixel((260, 42)))
+    scr.paste(head, (0, 0))
+    # stage tab: wipe the word with the tab's own gradient (column x=170), then the Russian name
+    col = scr.crop((170, 16, 171, 36))
+    for x in range(84, 152):
+        scr.paste(col, (x, 16))
+    put((86, 18, 150, 34), text.split('|')[0], 13, (255, 255, 255), None, 'c', (225, 110, 10))
+    for r, i in enumerate((38, 45, 36, 41, 46)):
+        y = 60 + 50 * r
+        name, title, genre = team(i)
+        put((104, y + 1, 264, y + 18), title, 14, (255, 255, 255), scr.getpixel((104, y + 3)), 'l', (30, 50, 140))
+        put((275, y + 5, 358, y + 15), genre, 9, (40, 70, 200), scr.getpixel((276, min(y + 10, 271))), 'c')
+        if y + 34 < 272:
+            put((118, y + 21, 290, y + 35), name, 12, (20, 20, 20), scr.getpixel((292, y + 28)))
+    scr = scr.crop((0, 0, 480, 272))
+    out.paste(scr.resize((fx1 - fx0, fy1 - fy0), Image.LANCZOS), (fx0, fy0))
+
+
+TUT_PAINT = {7: tut07, 14: tut14, 16: tut16}
+
+
 def main():
     outdir = os.path.join(BUILD, 'assets')
     os.makedirs(outdir, exist_ok=True)
@@ -620,6 +752,18 @@ def main():
             continue
         name, kind, text = line.rstrip('\n').split('\t')
         im = img.load(os.path.join(DATA, name)).convert('RGBA')
+        if kind == 'tutorial':     # BG_TUTnn.cbg: rebuilt from port captures, written as CBG header + TXG
+            import tl_tutorial
+            k = int(name[6:8])
+            paint = TUT_PAINT.get(k)
+            try:
+                im = tl_tutorial.build(k, im, paint and (lambda out, orig: paint(out, orig, text)))
+            except FileNotFoundError as e:
+                print('skip', name, e)
+                continue
+            open(os.path.join(outdir, name), 'wb').write(tl_tutorial.cbg(name, im, swizzle))
+            n += 1
+            continue
         if kind == 'title':
             im = title_parts(im, text.split('|'))
         elif kind == 'start':

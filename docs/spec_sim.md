@@ -307,7 +307,10 @@ Sub-states (object pairs at +0xad0b0, `{owner,vtable}`, `enter`/`update`):
 | S16..18 | | | Same pattern, job 0x1f (information). Not entered by S4 code; entry not found. |
 
 Every sub-state calls `FUN_0003796c`: tick cards. Draw `FUN_0003947c`: background, card layouts:
-`for i: tx = i*160-160`; list base y=+50; selection cards `FUN_00030754` offset (0,-22), submenus (16,-60); menu rows `y=-20 - row*32`, hit box ±60x ±16y; plan window translated (0,50), help window (0,104).
+`for i: tx = i*160-160`; list base y=+50; selection cards `FUN_00030754` offset (0,-22), submenus (16,-60); menu rows `y=-20 - row*32`, hit box ±60x ±16y; plan window translated (0,50); today's date `FUN_0000d840` (G+0x306f40) at (0,104).
+The help text is not drawn by the job: vtable slot onResume `FUN_00037860` puts it in the global help bar (G+0x3300c0) and shows it, onPause `FUN_000378e0` hides it (the tutorial pictures BG_TUT01/04/08 show it in the bottom bar).
+
+Date `FUN_0000d840` [CONFIRMED]: common_calendar.txg, sprite table 0x1e6ff8 (0 月, 1 日, 2 "(", 3 ")", 4..13 digits 24x24, 14..20 weekdays Sun..Sat). Relative to its origin: month tens (-66,0) if month>9, units (-46,0), 月 (-28,-4), day tens (-10,0) if day>9, units (10,0), 日 (28,-4), "(" (40,-4), weekday (56,0), ")" (72,-4). Weekday tint: holiday or Sunday 0xff0000ff, Saturday 0xffff5000, else black. Also drawn by the action scene (`FUN_00026074`) at (100,116).
 
 S4 input, priority top-down:
 1. Not L held, TRIANGLE pressed (or swipe with dy<=-20): snapshot GameData (`FUN_00001f6c`) and S7 (menu).
@@ -929,11 +932,20 @@ Browse in mode 1: SELECT → push job 0xd (fade, return Browse); cursor; on acti
 
 Cursor `FUN_0003c33c`: CIRCLE on selectable cell activates. d-pad with repeat moves cell, cursor tweens: each frame `pos += (target-pos)*0.5`, snaps at distance<1. Pointer: tap cell, drag scrolls, clamp x to `[(cols-1)*-104,0]`, y to `[0,(rows-1)*72]`.
 
-Cell info panel `FUN_00040edc`, `FUN_000416ac`: `あと %s.%s/%s.%s日` or `完成`. Line drawing `FUN_0003ecd4`: for each child link: child state 0 and prereqOK → grey 0xff808080 line; state>=1 white; else hidden.
+Header page 3 (仕様スクエア) in both modes [from the tutorial art]. Camera centres the cursor cell (`FUN_0003ad20`: `(x*-104, y*72)`, no clamp); cells at `(x*104, y*-72)` relative to it.
+
+Board draw `FUN_0003bca8` [CONFIRMED], three passes: links `FUN_0003ec64` → cells `FUN_0003f140` → cursor `FUN_0003af74` → cell tops `FUN_0003f32c`.
+- A cell is drawn when state != 0, or (grey 0xff808080) state 0 with planFinished (`FUN_0001b868` reads TaskRT+0x14).
+- Links `FUN_0003ecd4`: child state 0 and planFinished → grey; state>=1 white; else none. `FUN_00040024` stretches frame 1 of 0x1f19a8 (the orange bar of square_line.txg; frame 0 is the blue striped one).
+- `FUN_0003f140`: card 0x1f1a50 frame 0 (Sorata) while state 1..2, else owner+1; at (-20,16) `FUN_00040364` the day label 0x1f1cd8 (0 "全 . 日", 1 "あと . 日", 2 完成) with two digits 0x1f1dd0 (`v/3`, `(v%3)*3`) at +26/+42 (label 0) or +30/+46 (label 1): state 0/3 全 workCost, 1 全 planCost, 2 あと planCost-planDone, 4 あと workCost-workDone, 5 完成; name text at (0,-10), 10 px centred, 14 px lines; 済 stamp 0x1f2150 at (28,-12) when state 5.
+- `FUN_0003f32c`: pill 0x1f21a8 at (-40,28): state 1 未着手 if selectable else LOCK, 2 and 4 作業中, 3 未着手; 仕様 tag 0x1f22a0 at (40,-30) in states 1..2; pin 0x1f22f8 at (0,30): frame 0 in states 1..2 else owner+1, plus frame 8 (star) for key tasks.
+- Cursor: square_cursor.txg ring (24x24 in a 32x32 texture) as a 9-slice over (-52,37)-(52,-37) with 8 px corners (strips at 0x1f0b70).
+
+Cell info panel `FUN_0004103c`, drawn at (0,-136): face (-200,46) (Sorata in states 1..2, else owner+1), description (TaskDef+0x84) at (-168,62), `あと %s.%s/%s.%s日` or `完成` at (-168,44); 14 px text.
 
 ## 11. Task list (job 0x0d)
 
-Uses task_bg/window/count/name/psrts/cursor.txg; shows, for the character queues, remaining tasks (`FUN_00075a48`, `FUN_0007610c`, `FUN_000768d8`). Read-only view [ASSUMED]; layout not reversed. Unresolved.
+Uses task_bg/window/count/name/psrts/cursor.txg; shows, for the character queues, remaining tasks (`FUN_00075a48`, `FUN_0007610c`, `FUN_000768d8`). Read-only view [ASSUMED]; layout not reversed. Unresolved. The port's screen is a placeholder; BG_TUT07 shows the original (character list with "残タスク N日分" badges, a schedule grid of task chips, the deadline note, a face/description/days panel).
 
 ## 12. Finish and game over (job 7) [CONFIRMED]
 

@@ -82,7 +82,7 @@ def literals():
         helps = {m.group(1) for m in re.finditer(r'g_help\.show\("((?:[^"\\\n]|\\.)*)"|\bkHelp\w* *= *"((?:[^"\\\n]|\\.)*)"', s) for m in [re.match('(.*)', m.group(1) or m.group(2))]}
         for m in re.finditer(r'"((?:[^"\\\n]|\\.)*)"', s):
             t = m.group(1).replace('\\n', '\n').replace('\\"', '"')
-            if re.search(r'[　-鿿＀-￯]', t) and t not in seen and (len(t) > 1 or t == '？'):
+            if re.search(r'[　-鿿＀-￯]', t) and t not in seen and (len(t) > 1 or t in ('？', '仁')):   # 仁: kCharName, a one-kanji name
                 seen.add(t)
                 h = f + (' (� = значок крестовины; в переводе пиши ↑↓)' if '�' in t else '')
                 if '\ufffa' in t:

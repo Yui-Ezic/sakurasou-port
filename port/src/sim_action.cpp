@@ -83,7 +83,7 @@ std::string fmt(const char* f, const std::string& name, int done, int cost) {
 
 struct Action : Job, NativeHandler {
     TexP bg[2]; TexP icon; int bgIdx = 0, bgPrev = 0, bgFade = 30;
-    Actor sora, hero[6]; Panel panel; Toast toast; PageHeader hdr;
+    Actor sora, hero[6]; Panel panel; Toast toast; PageHeader hdr; DateWidget date;
     Vm vm; Launcher launcher;
     int st = 0, count = 0;
     int soraAction = 0, meetingTarget = -1, breakTarget = -1, code[6] = {};
@@ -324,6 +324,7 @@ struct Action : Job, NativeHandler {
             }
             panel.draw();
         }
+        date.draw(100, 116);   // FUN_00026074
         hdr.draw(); toast.draw();
     }
     // ---- save ----

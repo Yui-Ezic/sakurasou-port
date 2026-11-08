@@ -105,6 +105,23 @@ dlc_story.txg	dlc	Эпизод 1|Эпизод 2|Эпизод 3|Эпизод 4
 dlc_parts.txg	dlc	В PlayStation®Store|для «Сакурасо» можно купить|дополнительные материалы.|(Нужен доступ в интернет)
 dlc_parts_title.txg	dlc	Драма с полной озвучкой героев|Загадочные трусики
 menu_psrts.txg	psrts	Шарм|Объём|Стабил.|Драйв|Эмоции|Красота
-square_parts.txg	squareparts	Ждёт|Работа|LOCK|Спец.|ОК
+square_parts.txg	squareparts	Ждёт|Работа|LOCK|Спец.|ОК|дн.|ещё|д|Готово
 logo_dontcopy.txgtl	legal	<Внимание>|Распространение игровых программ через интернет без разрешения правообладателя, а также загрузка копий, о незаконности которых вам известно, строго запрещены законом.~Благодарим вас за понимание и сотрудничество.
 action_window.txg	actionwin	Нет
+BG_TUT01.cbg	tutorial	-
+BG_TUT02.cbg	tutorial	-
+BG_TUT03.cbg	tutorial	-
+BG_TUT04.cbg	tutorial	-
+BG_TUT05.cbg	tutorial	-
+BG_TUT06.cbg	tutorial	-
+BG_TUT07.cbg	tutorial	Сдача концепта|Ещё|дн.|Масиро Сиина|Мисаки Камиигуса|Нанами Аояма|Дзин Митака|Рюноскэ Акасака|Осталось|дн.|Иллюстрации|ждёт|начата|Иллюстрации к док.|Осталось 4.0/4.6 дн.
+BG_TUT08.cbg	tutorial	-
+BG_TUT09.cbg	tutorial	-
+BG_TUT10.cbg	tutorial	-
+BG_TUT11.cbg	tutorial	-
+BG_TUT12.cbg	tutorial	-
+BG_TUT13.cbg	tutorial	-
+BG_TUT14.cbg	tutorial	Задача на 4 дня|Готово за 2 дня!|ещё|4.0 д.|Иллюстрации|※ Но и здоровье тратится быстрее
+BG_TUT15.cbg	tutorial	-
+BG_TUT16.cbg	tutorial	Концепт
+BG_TUT17.cbg	tutorial	-

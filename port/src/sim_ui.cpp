@@ -93,6 +93,41 @@ void DeadlineWidget::draw() {
     } else for (int i = 0; i < 2; i++, v /= 10) q(f, T[10 + v % 10], x + 16 - i * 15.f, y - 18, 1, black);
 }
 
+// ---- date ----
+void DateWidget::draw(float x, float y) {
+    if (!tex) tex = g_gfx.load("common_calendar.txg");
+    if (!tex) return;
+    const Tex& t = *tex; const SQ* T = T_1e6ff8;   // 0 月, 1 日, 2 (, 3 ), 4..13 digits, 14..20 weekdays Sun..Sat
+    int m = 4, d = 1, wd = 0; bool hol = false;
+    simGetDate(m, d, wd, hol);
+    Color wc = argb(hol || wd == 0 ? 0xff0000ff : wd == 6 ? 0xffff5000 : 0xff000000);
+    if (trOn()) {   // "12.11 (пн)": the glyph sheet has no Cyrillic, so the weekday is text
+        static const char* wr[7] = {"вс", "пн", "вт", "ср", "чт", "пт", "сб"};
+        float w = (d >= 10 ? 40 : 20) + 8 + (m >= 10 ? 40 : 20) + 6 + 8 + 28 + 8, gx = x - w / 2;
+        auto digit = [&](int v) { q(t, T[4 + v], gx + 10, y); gx += 20; };
+        if (d >= 10) digit(d / 10 % 10);
+        digit(d % 10);
+        SDL_FRect dot{240 + gx + 2, 136 - y + 8, 3, 3};
+        SDL_SetRenderDrawColor(g_gfx.renderer(), 0, 0, 0, 255); SDL_RenderFillRectF(g_gfx.renderer(), &dot);
+        gx += 8;
+        if (m >= 10) digit(m / 10 % 10);
+        digit(m % 10);
+        gx += 6; q(t, T[2], gx + 4, y - 4); gx += 8;
+        simTextCentered(wr[wd % 7], gx + 14, y - 1, 20, wc); gx += 28;
+        q(t, T[3], gx + 4, y - 4);
+        return;
+    }
+    if (m > 9) q(t, T[4 + m / 10 % 10], x - 66, y);
+    q(t, T[4 + m % 10], x - 46, y);
+    q(t, T[0], x - 28, y - 4);
+    if (d > 9) q(t, T[4 + d / 10 % 10], x - 10, y);
+    q(t, T[4 + d % 10], x + 10, y);
+    q(t, T[1], x + 28, y - 4);
+    q(t, T[2], x + 40, y - 4);
+    q(t, T[14 + wd % 7], x + 56, y, 1, wc);
+    q(t, T[3], x + 72, y - 4);
+}
+
 // ---- toast ----
 void Toast::init() {
     parts = g_gfx.load("action_parts.txg"); faces = g_gfx.load("action_parts_icon.txg");

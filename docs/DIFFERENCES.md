@@ -26,7 +26,7 @@ Tested means run in this project. Nothing has been compared frame-by-frame with 
 - Assets load synchronously, so the original's load waits do not occur.
 - In-message TIPS viewer is a plain panel with the real text, not the original layout.
 - Calendar note-lift transition (style 3) falls back to a fade; page header decoration may be incomplete.
-- Task list (job 0xd) layout was not recoverable and is an approximation; contest ranking tweens and parts of chart layout are too.
+- Task list (job 0xd) layout was not recoverable and is an approximation (the tutorial picture BG_TUT07 shows the original); contest ranking tweens are too. The spec square's cells, links, cursor and info panel follow the original draw code.
 - Pose gallery shows number digits rather than outfit labels; info screen omits the deadline box; button glints and omake petals are not drawn.
 - About 26 `ASSUMED` comments in port/src mark remaining guesses. Spec open items: docs/spec_sim.md section 14, docs/spec_flow_menus.md section 13, docs/spec_adv.md section 16.
 - Saves are not interchangeable with PSP saves: the outer layout matches, but the job-state blob uses its own encoding.

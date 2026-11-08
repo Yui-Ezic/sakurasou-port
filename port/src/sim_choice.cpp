@@ -1,8 +1,10 @@
 // Job 8: action choice (spec_sim section 4).
+#include "tr.h"
 #include "sim_scenes.h"
 #include "sim_ui.h"
 #include <cstdio>
 #include <cstring>
+#include <sstream>
 
 namespace {
 const char* kHelp1 = "[仕様作成]仕様の作成　［ミーティング］モチベーション上昇、悩み解決　［お世話］全員健康回復　［お休み］相手の健康大回復";
@@ -24,7 +26,7 @@ struct Choice : Job, NativeHandler {
     TexP on, off; PageHeader hdr; DeadlineWidget dead; Toast toast;
     Card card[3]; int mode = 0, cur = 0, st = 0, f = 0;
     std::vector<Notice> notices; size_t nextNotice = 0;
-    Vm vm; bool restored = false; int helpX = 0;
+    Vm vm; bool restored = false; DateWidget date;
 
     int rows() const { return mode == 1 ? 4 : 3; }
     bool rowEnabled(int r) const { return mode != 2 || r == 0; }
@@ -80,7 +82,7 @@ struct Choice : Job, NativeHandler {
             if (open && c.menuGrow < 5) c.menuGrow++;
             if (!open && c.menuGrow > 0) c.menuGrow--;
         }
-        hdr.update(); toast.update(); helpX++;
+        hdr.update(); toast.update();
     }
     // FUN_00030b34 dispatch; cancelling/advancing is reported through Card.st
     void cardInput(Card& c) {
@@ -118,7 +120,10 @@ struct Choice : Job, NativeHandler {
         }
     }
     void pushSub(int next, int style) { st = next; g_trans.style(style); g_trans.cover(10); }
+    // FUN_00037860 / FUN_000378e0: the help text lives in the global help bar while this job is on top
+    void onPause() override { g_help.hide(); }
     void onResume() override {
+        g_help.show(mode == 1 ? kHelp1 : kHelp0);
         if (st >= 100) { st -= 100; g_trans.style(st == 7 ? 2 : 0); g_trans.reveal(10); st = 50; }   // back from a sub-job
     }
     void onUpdate() override {
@@ -161,8 +166,7 @@ struct Choice : Job, NativeHandler {
     void showNotice(const Notice& n) {
         static const char* t0[5] = {"%sがヤル気最高潮になりました", "%sが悩み始めました", "%sが作業不可になりました", "%sがヤル気最高潮から戻りました", "%sが作業不可から回復しました"};
         static const char* t1[5] = {"α版制作期間タスク\nタスクの[LOCK]が解除されました", "α版後半制作期間タスク\nタスクの[LOCK]が解除されました", "β版制作期間タスク\nタスクの[LOCK]が解除されました", "β版後半制作期間タスク\nタスクの[LOCK]が解除されました", "マスター版制作期間タスク\nタスクの[LOCK]が解除されました"};
-        char b[256];
-        if (n.type == 0) { snprintf(b, sizeof b, t0[n.sub], kCharName[n.arg]); toast.show(b, n.arg + 2, 0, 0, false); }
+        if (n.type == 0) toast.show(trFmt(t0[n.sub], tr(kCharName[n.arg]).c_str()), n.arg + 2, 0, 0, false);
         else toast.show(t1[n.sub], 0, 0, 0, false);
     }
     void main4() {
@@ -194,13 +198,7 @@ struct Choice : Job, NativeHandler {
         for (int i = 0; i < 2; i++) q(*on, T_1ee608[0], -80 + i * 160.f, 50);
         for (int i = 0; i < 3; i++) drawCard(i, -160 + i * 160.f, 50);
         for (int i = 0; i < 3; i++) if (card[i].st != Card::IDLE || card[i].menuGrow > 0) drawMenu(i, -160 + i * 160.f, 50);
-        // help line at (0,104), ASSUMED ticker rendering of FUN_0000d840
-        std::string h = mode == 1 ? kHelp1 : kHelp0;
-        float span = 220 + textWidth(h, 10);
-        SDL_Rect clip{140, 26, 220, 12};   // ASSUMED: between the page header and the deadline widget
-        SDL_RenderSetClipRect(g_gfx.renderer(), &clip);
-        simText(h, -100 + std::fmod((float)helpX, span) * -1 + 220, 104 + 5, 10, {60, 50, 40, 255});
-        SDL_RenderSetClipRect(g_gfx.renderer(), nullptr);
+        date.draw(0, 104);
         toast.draw();
     }
     void drawCard(int i, float x, float y) {
@@ -256,7 +254,12 @@ struct Choice : Job, NativeHandler {
             int rest = cq.count - cq.doneIndex, n = std::min(rest, 4);
             for (int k = n - 1; k >= 0; k--) q(*off, T_1f0340[i], x + 36 + k * 12.f, y);
             if (rest > 4) q(*off, T_1f0528[0], x + 36 + 68, y);
-            if (rest > 0) simTextCentered(stripNewlines(tb.tasks[cq.task[cq.doneIndex]].shortName), x + 36, y - 3, 10, {0, 0, 0, 255}, 10);
+            if (rest > 0) {   // two short lines on a 44 px chip; a longer translation is drawn smaller to stay on it
+                std::string nm = tr(tb.tasks[cq.task[cq.doneIndex]].shortName), l; std::stringstream ss(nm); float w = 0;
+                while (std::getline(ss, l)) w = std::max(w, textWidth(l, 10));
+                int cell = w > 44 ? std::max(6, (int)(10 * 44 / w)) : 10;
+                simTextCentered(nm, x + 36, y - 3, cell, {0, 0, 0, 255}, cell);
+            }
             if (s.state == 2) ui(*off, {80, 136, 152, 168}, x + 44, y);
             else if (s.state == 3) ui(*off, {0, 176, 72, 208}, x + 44, y);
         }

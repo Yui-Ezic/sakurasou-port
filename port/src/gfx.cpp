@@ -69,6 +69,7 @@ bool decodeAny(const Bytes& d, Image& im, int* cx, int* cy) {
     if (!memcmp(p, "CBG", 4) || !memcmp(p, "CSU", 4)) {
         uint32_t o = le32(p + 8);
         if (!memcmp(p, "CBG", 4)) { if (cx) *cx = le32(p + 16); if (cy) *cy = le32(p + 20); }
+        if (o + 4 <= d.size() && !memcmp(p + o, "TXG", 4)) return decodeTxg(p + o, d.size() - o, im);   // redrawn art (tl_tutorial.py)
         return decodeXgtl(p + o, d.size() - o, im);
     }
     return false;

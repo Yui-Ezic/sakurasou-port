@@ -40,6 +40,20 @@ tool, and accepting a line there clears its flag. F5 reloads the pack, also with
 the next message. Flags are stored in `translation/build/feedback.tsv`.
 Rejected lines and lines with errors stay out of the pack, so the game shows the Japanese there.
 
+## Tutorial pictures
+
+The tutorials (SCN_TUTORIAL_01..07) show BG_TUT01..17.cbg: shrunken game screens with the Japanese UI baked in. They
+are rebuilt from the port's own Russian screens:
+
+    tools/tl_tutorial_shots.sh                         # plays the first week headless, saves work/tut/sNN.bmp
+    ~/tools/sakura-venv/bin/python tools/tl_images.py  # rows 'tutorial' in images_ru.tsv -> build/assets/BG_TUT*.cbg
+
+The steps are in `tools/tl_tutorial.ctl` (see the `--ctl` comment in `port/src/main.cpp`); states the tutorial art
+stages (illness, worries, the later chart of TUT17) are poked into GameData. `tools/tl_tutorial.py` pastes each capture
+into the original frame, copies the red arrows from the original and redraws the rings. TUT07 (the task list, which
+the port does not draw like the original) and the drawing in TUT14 get Russian text painted over the original; their
+words are in `images_ru.tsv`. Check the pictures after any change to those screens.
+
 ## Language switch and coverage log
 
 With `--tl`, Settings has a ninth row, Language: 日本語 / Русский. The choice is saved in `translation/build/lang.txt`; Japanese

@@ -31,6 +31,14 @@ private:
     float x = 0, y = 0; int group = 4, deadline = 0, turn = 0; TexP font;
 };
 
+// FUN_0000d840: today's date from common_calendar.txg ("11月12日(月)"), drawn about (x,y)
+class DateWidget {
+public:
+    void draw(float x, float y);
+private:
+    TexP tex;
+};
+
 // action-log toast, FUN_0002bcac
 class Toast {
 public:

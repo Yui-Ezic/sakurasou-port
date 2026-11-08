@@ -70,6 +70,7 @@ class HelpBar {
 public:
     void show(const std::string& t); void hide();
     void update(); void draw();
+    void rewind() { scroll = 0; }   // dev (--ctl): show the start of a scrolling text
 private:
     std::string text; int mode = 0; float y = -148; TexP tex; int scroll = 0;
 };
