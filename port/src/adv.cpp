@@ -256,6 +256,9 @@ void AdvScene::friendUpdate() {
 }
 
 // Native 145: game-title entry. Native text input replaces the PSP OSK; 24 characters as in the original.
+// The new-game default "タイトル未定（仮）" (sim_core: team table) is a placeholder, not a name: the field starts empty
+// and shows it greyed (translated, without the cursor, since drawText looks up the whole string), and confirming
+// needs typed text. A title the player entered earlier is prefilled for editing.
 void AdvScene::titleUpdate() {
     if (!ttl) return;
     ttlT++;
@@ -283,7 +286,8 @@ void AdvScene::drawTitle() {
     g_gfx.fillRect(66, 112, 348, 22, {255, 255, 255, 255});
     uiFontCentered(g_fontM, "ゲームタイトル名", 0, 136 - 88, {224, 112, 32, 255});
     bool blink = (ttlT / 30) & 1;
-    g_fontM.drawText(ttlText + (blink ? "" : "_"), 72, 116, {0, 0, 0, 255});
+    if (ttlText.empty() && !ttlHint.empty()) g_fontM.drawText(ttlHint, 72, 116, {160, 160, 160, 255});
+    else g_fontM.drawText(ttlText + (blink ? "" : "_"), 72, 116, {0, 0, 0, 255});
     uiFontCentered(g_fontM, ttlText.empty() ? "入力してください" : "決定 (Enter / ○)", 0, 136 - 150, {224, 112, 32, 255});
 }
 void AdvScene::leave() {   // FUN_0004f6e0
@@ -615,7 +619,7 @@ int AdvScene::native(Vm& v, int id, int32_t& ret) {
     case 142: clMgr = 1; clResult = -1; return 0;
     case 143: return W(clMgr != 0);
     case 144: ret = clResult; return 0;
-    case 145: if (getenv("SAKURA_TRACE")) fprintf(stderr, "[title prompt, default \"%s\"]\n", (const char*)&g_game.raw[0x3558]); ttl = 1; ttlT = 0; ttlText = (const char*)&g_game.raw[0x3558]; textEntry(true); return 0;
+    case 145: if (getenv("SAKURA_TRACE")) fprintf(stderr, "[title prompt, default \"%s\"]\n", (const char*)&g_game.raw[0x3558]); ttl = 1; ttlT = 0; ttlText = (const char*)&g_game.raw[0x3558]; ttlHint.clear(); if (ttlText == "タイトル未定（仮）") ttlHint.swap(ttlText); textEntry(true); return 0;
     case 146: return W(ttl != 0);
     case 147: { BgImg& b = bg[1 - cur]; b.file = v.argStr(0); b.tex = g_gfx.load(b.file); b.cx = b.tex ? (float)b.tex->cx : 248; b.cy = b.tex ? (float)b.tex->cy : 144; b.alpha = 0; b.state = 0; return 0; }
     case 148: return 0;

@@ -94,6 +94,6 @@ private:
     int exitState = 0, exitT = 0; bool intro = true;
     int pendingScene = -1; bool resumeFade = false;
     bool hideUI = false;
-    int ttl = 0, ttlT = 0; std::string ttlText; void titleUpdate(); void drawTitle();
+    int ttl = 0, ttlT = 0; std::string ttlText, ttlHint; void titleUpdate(); void drawTitle();
     bool restoring = false;
 };
