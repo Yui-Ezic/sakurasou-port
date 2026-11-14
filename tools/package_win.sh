@@ -19,8 +19,16 @@ cp "$ROOT/port/build-con/sakurasou.exe" "$OUT/Sakurasou-console.exe"
 strip "$OUT"/*.exe
 
 # Every DLL the exe pulls from the MSYS2 prefix (system DLLs stay out).
-ntldd -R "$OUT/Sakurasou.exe" | tr '\\' '/' | grep -i "ucrt64/bin" | sed -E 's/.*=> *([^ ]+).*/\1/' | sort -u |
+# MSYS2's SDL2 is now sdl2-compat, whose SDL2.dll loads SDL3.dll at runtime (LoadLibrary, invisible
+# to ntldd), so SDL3.dll and its own dependencies are added explicitly when present.
+roots=("$OUT/Sakurasou.exe")
+[ -f "$UCRT/bin/SDL3.dll" ] && roots+=("$UCRT/bin/SDL3.dll") && cp "$UCRT/bin/SDL3.dll" "$OUT/"
+for r in "${roots[@]}"; do ntldd -R "$r"; done | tr '\\' '/' | grep -i "ucrt64/bin" | sed -E 's/.*=> *([^ ]+).*/\1/' | sort -u |
 while read -r dll; do cp "$(cygpath -u "$dll")" "$OUT/"; done
+# Fail the build rather than ship a package that cannot start.
+if grep -qa "SDL3.dll" "$OUT/SDL2.dll" &&[ ! -f "$OUT/SDL3.dll" ]; then
+  echo "SDL2.dll is sdl2-compat but SDL3.dll was not packaged" >&2; exit 1
+fi
 
 "$ROOT/tools/stage_release.sh" "$OUT" windows
 echo "Packaged: $OUT ($(du -sh "$OUT" | cut -f1), $(ls "$OUT"/*.dll | wc -l) DLLs)"
